@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PTKV3 • Làm bài thi</title>
+<style>
+:root{
+  --ptk-red:#A41919; --ptk-red-2:#8B1616; --ptk-red-3:#7F1212;
+  --ptk-gold:#FFD966; --ptk-gold-soft:#FFE8B3; --ptk-cream:#FFF5E1;
+  --ink:#0f172a; --radius:16px;
+  --shadow:0 14px 34px rgba(0,0,0,.10), 0 3px 10px rgba(0,0,0,.06);
+}
+html,body{height:100%}
+*{box-sizing:border-box}
+body{
+  margin:0; display:flex; flex-direction:column; min-height:100vh;
+  font-family:"Be Vietnam Pro",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--ink);
+  background: radial-gradient(160% 120% at 10% -10%, #C8331E 0%, #A41919 40%, #7F1212 100%);
+}
+
+/* HEADER */
+.header{position:sticky; top:0; z-index:50; color:#fff; font-size: 20px;
+  background:linear-gradient(90deg,var(--ptk-red) 0%, #C8331E 45%, #E46A2A 85%);
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
+}
+.header::after{content:"";display:block;height:2px;background:var(--ptk-gold)}
+.header__inner{max-width:1280px;margin:0 auto;padding:12px 24px;display:grid;grid-template-columns:1fr auto;align-items:center}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.brand__logo{width:30px;height:30px;border-radius:8px;background:var(--ptk-gold);color:var(--ptk-red);display:grid;place-items:center;font-weight:700}
+.header__right{justify-self:end;display:flex;align-items:center;gap:10px}
+.clock{
+  width:40px; height:40px; border-radius:999px;
+  background:var(--ptk-gold);             /* nền vàng */
+  display:grid; place-items:center;
+  border:2px solid #fff8;
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.05), 0 3px 6px rgba(0,0,0,.18);
+}
+.clock svg{ width:26px; height:26px; }
+
+.timer{background:var(--ptk-gold);color:#7F1212;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid #fff5;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+/* Kim đồng hồ quay thật */
+.clock svg .hand { transform-origin: 12px 12px; }
+@keyframes spinMinute { from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
+@keyframes spinSecond { from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
+
+/* 1 vòng/phút cho kim giây, 1 vòng/giờ cho kim phút */
+#clkSec { animation: spinSecond 60s linear infinite; }
+#clkMin { animation: spinMinute 3600s linear infinite; }
+
+/* Tôn trọng người dùng giảm chuyển động (không bắt buộc) */
+@media (prefers-reduced-motion: reduce){
+  #clkSec, #clkMin { animation: none; }
+}
+
+/* TITLE RIBBON */
+.title-ribbon{
+  margin-top:16px;width:100%;height:60px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#9F1B16 0%,#7F1212 100%);color:var(--ptk-gold);
+  font-weight:700;letter-spacing:.5px;font-size:22px;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.15),0 6px 16px rgba(0,0,0,.18)
+}
+
+/* MAIN */
+main{flex:1 0 auto}
+.container{max-width:1280px;margin:20px auto 0;padding:0 24px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.right-col{display:flex;flex-direction:column;gap:16px}
+
+/* CARD CÂU HỎI */
+.card{background:var(--ptk-cream);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid #f1d8a5}
+.card__body{padding:24px 24px 8px}
+.q-num{font-size:22px;font-weight:700;margin-bottom:8px}
+.q-text{font-size:18px;font-weight:700;margin-bottom:10px}
+.options{display:grid;gap:12px;margin:12px 0 2px}
+.opt{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:14px;background:#fff;border:2px solid #f1d8a5;border-radius:12px;min-height:54px;padding:5px 14px;position:relative;cursor:pointer;transition:.15s}
+.opt:hover{border-color:#e6c981;box-shadow:0 6px 16px rgba(0,0,0,.06)}
+.opt__letter{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:700;color:#7F1212;background:#FFF1C7;border:1px solid #f1d8a5}
+.opt input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.opt__text{font-weight:600;color:#243043}
+.opt.is-selected{background:#FDEFC8;border-color:#e6c981}
+.card__actions{display:flex;justify-content:space-between;gap:10px;padding:16px 24px 22px;border-top:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:10px; font-size: 16px; border:2px solid transparent;cursor:pointer;font-weight:700;letter-spacing:.2px}
+.btn--outline{background:#fff;border-color:#A41919;color:#A41919}
+.btn--primary{background:#A41919;color:#fff}
+
+/* PANEL phải */
+.panel{background:var(--ptk-gold-soft);border:2px solid #efcf76;border-radius:var(--radius);box-shadow:0 12px 28px rgba(255,217,102,.25);padding:18px 16px 20px}
+.panel h3{margin:0 0 12px;font-size:16px;font-weight:900;text-align:center;color:#7F1212}
+.grid-nums{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.num{height:40px;border-radius:10px;display:grid;place-items:center;font-weight:800;background:#fffdf5;border:2px solid #f0d38a;color:#4b5563;cursor:pointer;transition:.15s}
+.num:hover{transform:translateY(-1px);box-shadow:0 6px 12px rgba(0,0,0,.08)}
+.num.current{background:#D9480F;color:#fff;border-color:#bf3f0e}
+.num.answered{background:#A41919;color:#fff;border-color:#8B1616}
+
+/* NỘP BÀI */
+.submit-btn{
+  min-width:150px;height:50px;padding:0 28px;border-radius:999px; font-size: 20px;
+  background:linear-gradient(180deg,#E35A2A 0%,#C9311C 50%,#A41919 100%);
+  color:#fff;font-weight:700;letter-spacing:.2px;border:1px solid #FFD966;
+  box-shadow:0 18px 36px rgba(0,0,0,.25),inset 0 0 0 2px #ffffff22;cursor:pointer;
+}
+.submit-wrap{display:flex;justify-content:center;}
+
+/* FOOTER */
+.footer{ background:var(--ptk-red-3); color:#fff; margin-top:28px }
+.footer__inner{ max-width:1280px; margin:0 auto; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.footer__links{ display:flex; align-items:center; gap:20px; position:relative }
+.footer__links a,
+.footer__links .sub-trigger{ color:#fff; text-decoration:none; opacity:.92; font-weight:600; display:inline-flex; align-items:center; gap:6px; background:transparent; border:0; padding:6px 8px; cursor:pointer; transition:color .15s ease, opacity .15s ease, transform .15s ease; }
+.footer__links a:hover,
+.footer__links .sub-trigger:hover{ color:var(--ptk-gold); text-decoration:underline; opacity:1; }
+.has-sub{ position:relative }
+.sub-trigger svg{ transform:translateY(1px); opacity:.9 }
+.submenu{ position:absolute; bottom: calc(100% + 8px); right:0; z-index:10; display:none; min-width:220px; padding:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.25); box-shadow:0 12px 28px rgba(0,0,0,.25); backdrop-filter: blur(4px); border-radius:12px; }
+.submenu a{ display:block; padding:10px 12px; border-radius:8px; color:#fff; text-decoration:none; opacity:.95; transition:background .15s,color .15s; }
+.submenu a:hover{ background:rgba(255,217,102,.15); color:var(--ptk-gold) }
+.has-sub:hover .submenu{ display:block }
+.has-sub.open .submenu{ display:block }
+
+/* Responsive */
+@media (max-width: 640px){
+  .footer__links{ gap:12px; flex-wrap:wrap }
+  .submenu{ right:auto; left:0 }
+}
+@media (max-width:1024px){.grid{grid-template-columns:1fr}}
+/* Mobile: số câu dạng vuông */
+@media (max-width: 640px){
+  .grid-nums{ grid-template-columns: repeat(8, 1fr); gap: 10px; }
+  .num{ aspect-ratio:1/1; min-height:44px; border-radius:8px; padding:0; height:auto; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__inner">
+    <div class="brand">BAN CHỈ HUY PTKV3</div>
+    <div class="header__right">
+     <div class="clock" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
+    <!-- Mặt đồng hồ -->
+    <circle cx="12" cy="12" r="10" fill="#fff" stroke="#000" stroke-width="1"/>
+    <!-- Vạch 12 hướng (nhẹ) -->
+    <g stroke="#000" stroke-width="0.8" opacity="0.25">
+      <line x1="12" y1="2.5" x2="12" y2="4.2"/>
+      <line x1="12" y1="19.8" x2="12" y2="21.5"/>
+      <line x1="2.5" y1="12" x2="4.2" y2="12"/>
+      <line x1="19.8" y1="12" x2="21.5" y2="12"/>
+      <line x1="5.1" y1="5.1" x2="6.3" y2="6.3"/>
+      <line x1="17.7" y1="17.7" x2="18.9" y2="18.9"/>
+      <line x1="5.1" y1="18.9" x2="6.3" y2="17.7"/>
+      <line x1="17.7" y1="6.3" x2="18.9" y2="5.1"/>
+    </g>
+    <!-- Kim phút (quay chậm) -->
+    <line id="clkMin" class="hand" x1="12" y1="12" x2="12" y2="5.4" stroke="#000" stroke-width="1.8" stroke-linecap="round"/>
+    <!-- Kim giây (quay đều) -->
+    <line id="clkSec" class="hand" x1="12" y1="12" x2="12" y2="3.6" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Tâm -->
+    <circle cx="12" cy="12" r="1.4" fill="#000"/>
+  </svg>
+</div>
+
+      <div class="timer" id="timerText">30:00</div>
+    </div>
+  </div>
+</header>
+
+<div class="title-ribbon" id="examTitle">KỲ KIỂM TRA</div>
+<script>
+(function(){
+  try{
+    const data = JSON.parse(sessionStorage.getItem('ptkv3:exam:current') || '{}');
+    if(data && data.title){
+      const el = document.getElementById('examTitle');
+      el.textContent = data.title.toUpperCase(); // luôn in hoa đậm
+    }
+  }catch(e){ console.warn('Không đọc được tiêu đề kỳ thi', e); }
+})();
+</script>
+
+<main>
+  <div class="container">
+    <div class="grid">
+
+      <!-- CỘT TRÁI: CÂU HỎI -->
+      <section class="card">
+        <div class="card__body">
+          <div class="q-num" id="qNum">Câu 1</div>
+          <div class="q-text" id="qText">Đang tải câu hỏi…</div>
+          <form class="options" id="opts"></form>
+        </div>
+        <div class="card__actions">
+          <button type="button" class="btn btn--outline" id="btnPrev">Câu trước</button>
+          <button type="button" class="btn btn--primary" id="btnNext">Câu tiếp theo</button>
+        </div>
+      </section>
+
+      <!-- CỘT PHẢI: PANEL + NỘP BÀI -->
+      <div class="right-col">
+        <aside class="panel">
+          <h3>Danh sách câu hỏi</h3>
+          <div class="grid-nums" id="gridNums"></div>
+        </aside>
+        <div class="submit-wrap">
+          <button class="submit-btn" id="btnSubmit" type="button">NỘP BÀI</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer__inner">
+    <div>© PTKV3 – Trung tâm Giáo dục Chính trị Số</div>
+
+    <nav class="footer__links" aria-label="Liên kết chân trang">
+      <a href="index.html">Trang chủ</a>
+      <a href="tintuc24.html">Tin tức</a>
+      <a href="Hoctap.html">Học tập</a>
+      <a href="exam.html">Kiểm tra</a>
+      <div class="has-sub">
+        <button class="sub-trigger" aria-haspopup="true" aria-expanded="false">
+          Kết quả
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="submenu" role="menu">
+          <a role="menuitem" href="my-results.html">Kết quả của tôi</a>
+          <a role="menuitem" href="leaderboard.html">Bảng xếp hạng</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</footer>
+
+<!-- ================== LOGIC ĐỒNG BỘ KIẾN TRÚC ================== -->
+<script>
+/* ===== CONFIG ===== */
+const API_BASE = 'https://script.google.com/macros/s/AKfycbxLc27Q0wjn8fReUd0VGVva63-tihSoEbYAyP2g__uPYTww8QA-fheaKQ0iK43iEao_/exec';
+const RESULT_PAGE = 'ketqua.html';
+
+/* ===== SESSION / PARAMS ===== */
+const CURRENT = (()=>{try{const s=sessionStorage.getItem('ptkv3:exam:current');return s?JSON.parse(s):{};}catch(e){return {};}})();
+const qs = new URLSearchParams(location.search);
+const BANK = CURRENT.bankId || qs.get('bank') || '';
+const MODE = (CURRENT.mode || qs.get('mode') || 'exam');
+
+/* ===== DOM ===== */
+const $ = (s, r=document)=>r.querySelector(s);
+const qNum=$('#qNum'),qText=$('#qText'),opts=$('#opts'),gridNums=$('#gridNums');
+const btnPrev=$('#btnPrev'),btnNext=$('#btnNext'),btnSubmit=$('#btnSubmit'),timerText=$('#timerText'),titleEl=$('#examTitle');
+
+/** State */
+let QUESTIONS=[];     // [{id,text,opts[],correct,topic, no?}]
+let TOTAL=0;
+let idx=0;
+let answers=new Map(); // key: q.id -> {no,qid,qtext,chosen,chosenText,correctIndex,correctText,ok}
+let durationSec=30*60;
+let remaining=durationSec;
+let timer=null;
+
+/** Helpers */
+const letters=['A','B','C','D'];
+const pad2=n=>String(n).padStart(2,'0');
+const fmtTime=sec=>`${pad2(Math.floor(sec/60))}:${pad2(sec%60)}`;
+
+/** Render câu */
+function renderQuestion(){
+  const q = QUESTIONS[idx];
+  qNum.textContent = `Câu ${q.no ?? (idx+1)}`;
+  qText.textContent = q.text || '';
+
+  const saved = answers.get(q.id);
+  opts.innerHTML='';
+  (q.opts||q.options||[]).forEach((t,i)=>{
+    const row = document.createElement('label'); row.className='opt';
+    const checked = saved ? saved.chosen===i : false;
+    if(checked) row.classList.add('is-selected');
+    row.innerHTML = `
+      <span class="opt__letter">${letters[i]||String(i+1)}</span>
+      <span class="opt__text">${t??''}</span>
+      <input type="radio" name="q${q.id}" ${checked?'checked':''}/>
+    `;
+    row.querySelector('input').addEventListener('change', ()=>{
+      // LƯU ĐỐI TƯỢNG ĐẦY ĐỦ (có text) – bảo đảm Results_DET có dữ liệu thật
+      answers.set(q.id, {
+        no: (q.no ?? (idx+1)),
+        qid: q.id,
+        qtext: q.text || '',
+        chosen: i,
+        chosenText: (q.opts && q.opts[i]) ? q.opts[i] : '',
+        correctIndex: Number(q.correct),
+        correctText: (q.opts && q.opts[Number(q.correct)]) ? q.opts[Number(q.correct)] : '',
+        ok: i === Number(q.correct)
+      });
+      row.classList.add('is-selected');
+      opts.querySelectorAll('.opt').forEach(el=>{ if(el!==row) el.classList.remove('is-selected'); });
+      syncGrid();
+    });
+    opts.appendChild(row);
+  });
+
+  btnPrev.disabled = idx===0;
+  btnNext.disabled = idx===TOTAL-1;
+  syncGrid();
+}
+/** Lưới số */
+function renderGrid(){
+  gridNums.innerHTML='';
+  for(let i=0;i<TOTAL;i++){
+    const b=document.createElement('button');
+    b.type='button'; b.className='num';
+    b.textContent = String(QUESTIONS[i]?.no || (i+1));
+    b.addEventListener('click',()=>{ idx=i; renderQuestion(); });
+    gridNums.appendChild(b);
+  }
+  syncGrid();
+}
+function syncGrid(){
+  [...gridNums.children].forEach((el,i)=>{
+    const qid = QUESTIONS[i]?.id;
+    el.classList.toggle('current', i===idx);
+    el.classList.toggle('answered', !!answers.get(qid));
+  });
+}
+
+/** Timer */
+function startTimer(){
+  clearInterval(timer);
+  remaining=durationSec; timerText.textContent=fmtTime(remaining);
+  timer=setInterval(()=>{
+    remaining=Math.max(0,remaining-1);
+    timerText.textContent=fmtTime(remaining);
+    if(remaining===0){ clearInterval(timer); safeSubmit(true); }
+  },1000);
+}
+
+/** Submit an toàn (ghi GAS + chuyển trang) */
+async function safeSubmit(auto=false){
+  // dựng chi tiết có TEXT đầy đủ
+  const detail = QUESTIONS.map((q,i)=>{
+    const a = answers.get(q.id) || {};
+    const chosen = (typeof a.chosen==='number') ? a.chosen : -1;
+    return {
+      no: (q.no ?? (i+1)),
+      qid: Number(q.id),
+      qtext: q.text || '',
+      chosen,
+      chosenText: chosen>=0 ? (q.opts?.[chosen]||'') : '',
+      correctIndex: Number(q.correct),
+      correctText: q.opts?.[Number(q.correct)] || '',
+      ok: chosen === Number(q.correct)
+    };
+  });
+
+  const correct  = detail.filter(x=>x.ok===true).length;
+  const answered = detail.filter(x=>x.chosen>=0).length;
+  const skip     = detail.length - answered;
+  const wrong    = detail.length - correct - skip;
+  const spent    = Math.max(0, durationSec - remaining);
+
+  // payload gửi dạng form-url-encoded để tránh preflight
+  const form = new URLSearchParams();
+  form.set('action',   'submit');
+  form.set('bankId',   BANK);
+  form.set('total',    String(detail.length));
+  form.set('correct',  String(correct));
+  form.set('wrong',    String(wrong));
+  form.set('skip',     String(skip));
+  form.set('spentSec', String(spent));
+  form.set('userAgent', navigator.userAgent);
+  form.set('device', /Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop');
+
+  // nếu đã login qua AUTH và có info trong localStorage
+  try{
+    const u = JSON.parse(localStorage.getItem('ptkv3_user')||'{}');
+    if(u.id)       form.set('userId',   u.id);
+    if(u.username) form.set('username', u.username);
+    if(u.name)     form.set('userName', u.name);
+    if(u.unit)     form.set('userUnit', u.unit);
+  }catch(_){}
+
+  form.set('answers', JSON.stringify(detail));
+  form.set('extra',   JSON.stringify({ mode: MODE, title: (CURRENT.title||'') }));
+
+  try{
+    const res  = await fetch(API_BASE, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: form.toString(),
+      cache:'no-store'
+    });
+
+    // Trường hợp web-app trả HTML (do quyền), parse JSON an toàn
+    let dataText = await res.text();
+    let data; try { data = JSON.parse(dataText) } catch { data = { ok:false, error:'Response is not JSON' } }
+
+    if(!data.ok){
+      alert('Không thể ghi kết quả về hệ thống. ' + (data.error || ''));
+    }
+  }catch(err){
+    alert('Không thể ghi kết quả về hệ thống. Vui lòng thử lại.');
+  }
+
+  // chuyển trang kết quả để không kẹt UX
+  const q = new URLSearchParams({ correct:String(correct), total:String(detail.length), time:fmtTime(spent), bank:BANK, mode:MODE });
+  location.href = `${RESULT_PAGE}?${q.toString()}`;
+}
+/* ===== LOAD QUESTIONS ===== */
+async function loadQuestions(){
+  if(!BANK){ alert('Không xác định được mã kỳ thi (bankId).'); location.href='kiemtra.html'; return; }
+
+  const url = `${API_BASE}?action=questions&bank=${encodeURIComponent(BANK)}`;
+  try{
+    const res  = await fetch(url, {cache:'no-store'});
+    const data = await res.json();
+    if(!data.ok){ alert(`Không thể tải ngân hàng câu hỏi.\nChi tiết: ${data.error||'unknown'}`); return; }
+
+    QUESTIONS   = data.questions.map((q,i)=>({ ...q, no:(i+1) }));
+    TOTAL       = Number(data.total || QUESTIONS.length || 0);
+    durationSec = Number(data.durationSec || 30*60);
+
+    idx=0; answers=new Map();
+    renderGrid(); renderQuestion(); startTimer();
+  }catch(err){
+    alert(`Không thể tải ngân hàng câu hỏi.\nChi tiết: ${err?.message||err}`);
+  }
+}
+
+/** Events */
+btnPrev.addEventListener('click',()=>{ if(idx>0){ idx--; renderQuestion(); } });
+btnNext.addEventListener('click',()=>{ if(idx<TOTAL-1){ idx++; renderQuestion(); } });
+btnSubmit.addEventListener('click',()=>{ if(confirm('Xác nhận nộp bài?')) safeSubmit(false); });
+
+/** Init */
+loadQuestions();
+</script>
+
+<script>
+// Mở/đóng submenu khi bấm vào "Kết quả"
+document.querySelectorAll('.has-sub .sub-trigger').forEach(btn=>{
+  btn.addEventListener('click',(e)=>{
+    e.preventDefault();
+    const wrap=btn.closest('.has-sub');
+    const expanded=btn.getAttribute('aria-expanded')==='true';
+    document.querySelectorAll('.has-sub').forEach(w=>{
+      w.classList.remove('open');
+      const b=w.querySelector('.sub-trigger');
+      if(b)b.setAttribute('aria-expanded','false');
+    });
+    if(!expanded){
+      wrap.classList.add('open');
+      btn.setAttribute('aria-expanded','true');
+    }
+  });
+});
+document.addEventListener('click',(e)=>{
+  const inMenu=e.target.closest('.has-sub');
+  if(!inMenu){
+    document.querySelectorAll('.has-sub').forEach(w=>{
+      w.classList.remove('open');
+      const b=w.querySelector('.sub-trigger');
+      if(b)b.setAttribute('aria-expanded','false');
+    });
+  }
+});
+</script>
+</body>
+</html>

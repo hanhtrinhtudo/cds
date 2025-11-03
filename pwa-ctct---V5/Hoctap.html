@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PTKV3 • Học tập AI chuyên biệt</title>
+
+<link rel="stylesheet" href="css/nav.css?v=20251006">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#A41919; --accent:#FFD966; --bg:#FFF8ED; --text:#0f172a;
+  --muted:#6b7280; --border:#e5e7eb; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+a{color:inherit;text-decoration:none} a:hover{color:#dc2626}
+
+/* ===== Header/ Footer đồng bộ Tintuc24 ===== */
+.header{position:sticky;top:0;z-index:50;font-weight:600;background:linear-gradient(90deg,#7f1d1d,#b91c1c 45%,#dc2626);color:#fff}
+.nav{max-width:1200px;margin:auto;display:flex;gap:18px;align-items:center;padding:12px 16px}
+.nav .brand{font-weight:800}
+.nav a{color:#fff;padding:6px 10px;border-radius:8px}
+.nav a[aria-current="page"]{background:rgba(0,0,0,.18)}
+.nav a:hover{color:var(--accent); transform:scale(1.04)}
+.footer{margin-top:40px;background:#111827;color:#cbd5e1}
+.footer .wrap{max-width:1200px;margin:auto;padding:20px 16px;font-size:14px}
+
+/* ===== Page ===== */
+.container{max-width:1200px;margin:0 auto;padding:16px}
+.page-title{font-size:32px;font-weight:800;margin:22px 0 10px}
+.section{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px}
+.search-row{display:flex;gap:12px;align-items:center}
+.search-row input{flex:1;padding:12px 14px;border:1px solid var(--border);border-radius:999px;background:#fff}
+
+.grid{display:grid;gap:16px}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:980px){.grid-3{grid-template-columns:1fr}}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px}
+.mat-card:hover{transform:translateY(-4px);box-shadow:0 6px 16px rgba(0,0,0,.10)}
+
+/* --- Google-Drive like cards --- */
+.grid-drive{
+  display:grid; gap:16px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+@media(max-width:1200px){ .grid-drive{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:900px) { .grid-drive{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:560px) { .grid-drive{ grid-template-columns:1fr; } }
+
+/* mỗi card */
+.drive-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#adb5d3;
+  overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  transition:.2s transform,.2s box-shadow;
+  cursor:pointer;
+}
+.drive-card:hover{ transform:translateY(-3px); box-shadow:0 10px 18px rgba(0,0,0,.10); }
+
+/* ===== Thanh tiêu đề ===== */
+.drive-head{
+  display:flex; align-items:center; gap:8px;
+  padding:8px 10px;
+  background:#fff;            /* liền với card, không có vạch ngăn */
+  border-bottom:none;         /* bỏ kẻ trắng */
+}
+.drive-head .mime{
+  width:20px; height:20px;              /* vuông nhỏ như ảnh */
+  background:#ef4444; color:#fff;
+  font-weight:600; font-size:8px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:4px; flex-shrink:0;
+}
+.drive-title{
+  font-weight:800; color:#111; flex:1; min-width:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ===== Khung preview ảnh (như ảnh mẫu) ===== */
+.drive-body{ padding:8px; background:#fff; }         /* tạo khoảng cách khung với viền card */
+.drive-frame{
+  width:100%;
+  aspect-ratio:16/9;                                  /* giống thumbnail Drive; đổi 4/3 nếu cần */
+  background:#f3f4f6;                                 /* nền xám nhạt dưới ảnh */
+  border:1px solid #e5e7eb;                           /* viền khung mảnh */
+  border-radius:4px;                                 /* bo góc khung */
+  overflow:hidden;                                    /* ảnh tràn kín */
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);    /* viền sáng rất nhẹ như ảnh mẫu */
+}
+.drive-frame img{
+  width:100%; height:100%;
+  object-fit:cover; display:block; border:none;
+}
+/* Ẩn/hiện search section khi vào xem tài liệu */
+.section.is-hidden{ display:none !important; }
+
+.gd-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}
+.gd-badge{border:1px solid #e5e7eb;border-radius:999px;padding:2px 8px;font-size:12px;color:#374151;background:#fff}
+.gd-pill{background:#facc15;color:#111;border:none;border-radius:8px;padding:6px 10px;font-weight:700}
+.title{
+  margin-top:8px;font-weight:800;line-height:1.3;
+  display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:3;    /* ↑ webkit */
+  line-clamp:3;            /* ↑ thuộc tính chuẩn (thêm để tương thích) */
+  overflow:hidden;min-height:4.8em;
+}
+.meta{display:flex;gap:8px;align-items:center;margin-top:6px}
+.badge{border:1px solid #d1d5db;border-radius:999px;font-size:12px;padding:3px 9px;background:#fff;color:#374151}
+.btn{padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(90deg,#A41919,#C62828);color:#fff;cursor:pointer}
+.btn.ghost{background:#fff;border:1px solid var(--border);color:#111}
+
+/* Viewer split */
+.split{display:grid;grid-template-columns:1.35fr .65fr;gap:16px}
+@media(max-width:1024px){.split{grid-template-columns:1fr}}
+.viewer iframe{width:100%;height:72vh;border:0;border-radius:12px;background:#000}
+
+/* AI chat box */
+.ai-dock{
+  display:flex; flex-direction:column;
+  border:1px solid #ffe08a; border-radius:14px; overflow:hidden; background:#fff;
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
+.ai-dock .head{
+  height:52px; font-weight: 600;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 14px;
+  background:linear-gradient(180deg,#ffe470 0%,#facc15 100%);
+  border-bottom:1px solid #ffe08a;
+}
+
+/* Ẩn các nút control */
+.ai-dock .head .btn{ display:none; }
+.ai-dock .body{
+  flex:1; min-height:260px; max-height:56vh;
+  overflow:auto; padding:14px;
+  background:#fff;
+}
+.bubble{ 
+  padding:10px 12px; border-radius:12px; margin:8px 0; 
+  max-width:90%; line-height:1.55; box-shadow:0 1px 2px rgba(0,0,0,.04);
+}
+.bubble.user{ background:#e8f0ff; margin-left:auto; }
+.bubble.ai{ background:#fff8db; }
+.bubble small{ display:block; margin-top:4px; color:#6b7280; }
+/* Composer (input) dính đáy, kiểu app chat hiện đại */
+.ai-dock .input{
+  position:sticky; bottom:0; z-index:1;
+  background:#fff; padding:12px 12px; 
+  border-top:1px solid #ffe08a;
+  display:flex; gap:10px; align-items:center;
+}
+.ai-dock .input input{
+  flex:1; height:46px; border-radius:9999px; font-size:15px;
+  padding:0 16px;
+  border:1px solid #e5e7eb; outline:none;
+  box-shadow:inset 0 1px 0 rgba(0,0,0,.02);
+}
+.ai-dock .input input:focus{
+  border-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2);
+}
+
+.ai-dock .btn{ background:#f59e0b; color:#000; border:none; border-radius:9999px; padding:8px 14px; font-weight:700; cursor:pointer; }
+
+/* Nút “Gửi” – pill gọn, có icon gửi */
+.ai-dock .btn#aiSend{
+  height:46px; min-width:52px; padding:0 18px;
+  border-radius:12px; border:none; cursor:pointer;
+  background:linear-gradient(180deg,#ffb13b,#f59e0b);
+  color:#111; font-weight:600; letter-spacing:.2px;
+  box-shadow:0 2px 0 rgba(0,0,0,.06), 0 8px 16px rgba(245,158,11,.18);
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .12s ease, filter .12s ease;
+}
+.ai-dock .btn#aiSend::before{
+  font-size:14px; transform:rotate(45deg);
+}
+.ai-dock .btn#aiSend:hover{ filter:brightness(.98); transform:translateY(-1px); }
+.ai-dock .btn#aiSend:active{ transform:translateY(0); }
+
+/* Quiz tuần tự */
+.quiz .q{margin:8px 0 4px;font-weight:700}
+.quiz ul{padding-left:0;margin:8px 0}
+.quiz li{list-style:none;margin:6px 0;padding:8px;border:1px solid var(--border);border-radius:10px;display:flex;gap:8px;align-items:center}
+.quiz .nav{display:flex;gap:8px;margin-top:8px}
+.result-card{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:12px;margin-top:8px}
+
+.spinner{width:34px;height:34px;border:3px solid #ddd;border-top-color:#A41919;border-radius:50%;animation:spin 1s linear infinite;margin:16px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:24px;border:1px dashed #ddd;border-radius:14px;text-align:center;color:#6b7280}
+
+/* Nút “Quay lại Học tập” dạng pill chuyên nghiệp */
+.btn.back{
+  display:inline-flex;               /* giữ chiều ngang theo nội dung */
+  align-items:center; justify-content:center;
+  gap:8px;
+  background:#f2760a;
+  color:#fbfbfb;
+  border:2px solid #f7fb00;
+  border-radius:9999px;
+  padding:10px 18px;
+  font-weight:700;
+  font-size: 14px;
+  white-space:nowrap; 
+  height:auto; min-height:42px;      /* ngăn cao = rộng */
+  width:auto; max-width:100%;
+  box-shadow:0 2px 0 rgba(244, 3, 3, 0.12);
+}
+.btn.back:hover{
+  filter:brightness(0.98);
+  transform:translateY(-1px);
+}
+.btn.back:active{ transform:translateY(0); }
+@media (max-width:420px){
+  .btn.back{
+    white-space:normal;              /* cho phép xuống dòng khi cần */
+    border-radius:12px;              /* bo góc vừa phải ⇒ không thể tròn */
+    padding:10px 14px;
+  }
+}
+/* Viewer: iframe cao tối thiểu 72vh, JS sẽ đồng bộ >= chiều cao cột phải */
+.viewer iframe{
+  width:100%;
+  min-height:72vh;
+  border:0;
+  border-radius:12px;
+  background:#000;}
+
+  /* Bỏ box quanh khu tìm kiếm */
+#searchBar.section{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 8px 0 18px;
+}
+
+/* Hàng tìm kiếm kiểu pill hiện đại */
+.search-row{
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;                 /* input + nút liền khối */
+}
+
+.search-row input{
+  flex: 1;
+  height: 54px;
+  padding: 0 56px 0 52px;                       /* chừa chỗ icon + nút */
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  background: #fff;
+  font-size: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04) inset, 0 2px 8px rgba(0,0,0,.04);
+  outline: none;
+}
+.search-row input:focus{
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245,158,11,.18);
+}
+
+/* Icon kính lúp nằm trong input (không cần đổi HTML) */
+.search-row::before{
+  content: "🔎";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  opacity: .6;
+  pointer-events: none;
+}
+
+/* Nút Tìm gắn liền vào bên phải input */
+#btnFind{
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 70px;
+  height: 42px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 9999px;
+  font-weight: 600;
+  background: linear-gradient(90deg,#a41919,#c62828);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(0,0,0,.08), 0 10px 18px rgba(164,25,25,.18);
+  transition: transform .12s ease, filter .12s ease;
+}
+
+/* Mobile tinh chỉnh một chút */
+@media (max-width: 640px){
+  .search-row input{ height: 50px; padding: 0 54px 0 48px; }
+  #btnFind{ height: 40px; padding: 0 16px; }
+}
+.m-toggle{
+  display:none !important;
+  background:transparent; border:0; color:#fff;
+  font-size:28px; line-height:1;
+}
+/* Mobile styles */
+@media (max-width:1024px){
+  .nav a:not(.brand), .nav .has-dropdown{display:none !important;}
+  .m-toggle{display:block !important; margin-left:auto;}
+
+  .m-drawer{
+    position:fixed; inset:0 auto 0 0; width:86vw; max-width:420px;
+    transform:translateX(-100%);
+    background:linear-gradient(180deg,#7f1d1d,#b91c1c 55%,#9d1414);
+    color:#fff; z-index:120; transition:transform .25s ease;
+    box-shadow:4px 0 30px rgba(0,0,0,.25);
+  }
+  .m-head{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.12)}
+  .m-home{font-size:22px; text-decoration:none}
+  .m-brand{font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .m-close{margin-left:auto; background:0 0; border:0; color:#fff; font-size:28px; cursor:pointer}
+
+  .m-menu{padding:8px 8px 18px}
+  .m-item{display:block; color:#fff; padding:14px 10px; font-weight:600; border-bottom:1px solid rgba(255,255,255,.08)}
+  .m-sub{display:flex; flex-direction:column; gap:6px; padding:10px 10px 12px}
+  .m-sub[hidden]{display:none !important;}
+  .m-drop .caret{float:right}
+  .m-drop[aria-expanded="true"] .caret{ transform: rotate(180deg); }
+
+  .m-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.35); backdrop-filter:blur(2px);
+    z-index:110; opacity:0; transition:opacity .25s; pointer-events:none;
+  }
+
+  /* States */
+  body.menu-open .m-drawer{transform:translateX(0)}
+  body.menu-open .m-backdrop{opacity:1; pointer-events:auto}
+  body.no-scroll{overflow:hidden}
+
+  /* Link đang ở trang hiện tại trong drawer */
+  .m-menu .m-item[aria-current="page"]{
+    background: rgba(255,255,255,.16);
+    border-left: 3px solid #FFD966;
+    font-weight: 800;
+  }
+}
+/* ===== Mobile: Back lên góc trái, tiêu đề xuống dưới & full-width ===== */
+@media (max-width: 768px){
+  /* Khung flex chứa H2 và nút Back (đúng như HTML hiện tại) */
+  .card > div > div[style*="display:flex"]{
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  /* Nút "Quay lại chuyên đề" lên trước, bám trái */
+  .card > div > div[style*="display:flex"] > #back{
+    order: -1;
+    align-self: flex-start;
+    margin: 2px 0 2px;
+  }
+
+  /* Tiêu đề nằm dưới và giãn full chiều ngang */
+  .card > div > div[style*="display:flex"] h2{
+    order: 2;
+    margin: 0 !important;
+    width: 100%;
+    text-align: left;
+    font-size: 20px;         /* có thể 22px nếu muốn nổi hơn */
+    line-height: 1.32;
+    text-wrap: balance;
+  }
+
+  /* Chống nút bị tròn & quá to trên mobile */
+  .btn.back{
+    border-radius: 12px !important;   /* pill nhẹ, không tròn xoe */
+    padding: 8px 12px !important;
+    min-height: 40px !important;
+    height: auto !important;
+    width: auto !important;
+    white-space: nowrap !important;    /* giữ 1 dòng gọn gàng */
+  }
+}
+
+/* Hàng tiêu đề dùng chung (thêm class .mat-bar cho khung flex hiện tại) */
+.mat-bar{ display:flex; align-items:center; gap:10px; justify-content:space-between; }
+
+/* Wrapper cho nút back khi tách ra ngoài (ẩn trên desktop) */
+.btn-back-wrapper{ display:none; }
+
+@media (max-width:768px){
+  /* Hiện wrapper và đặt khoảng cách trên dưới */
+  .btn-back-wrapper{
+    display:flex;
+    justify-content:flex-start;
+    margin:8px 0 10px;
+  }
+
+  /* Tối ưu nút back khi tách ra ngoài – gọn, không “tròn xoe” */
+  .btn-back-wrapper .btn.back{
+    padding:8px 14px !important;
+    border-radius:12px !important;
+    white-space:nowrap !important;
+    min-height:40px;
+  }
+
+  /* Khi ở mobile: tiêu đề trong khung ở dưới và full-width */
+  .mat-bar{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+  }
+  .mat-bar h2{
+    margin:0 !important;
+    width:100%;
+    text-align:left;
+    font-size:20px;
+    line-height:1.32;
+    text-wrap:balance;
+  }
+}
+/* Luôn 1 dòng cho tiêu đề trang */
+.page-title{
+  font-size: clamp(22px, 4.6vw, 32px);
+  font-weight: 800;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 10px 0 10px;
+  text-rendering: optimizeLegibility; 
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Nếu muốn không bị “…” ở máy cực nhỏ, có thể nén chữ thêm chút */
+@media (max-width: 360px){
+  .page-title{
+    font-size: clamp(18px, 5vw, 26px);
+    letter-spacing: .2px;
+  }
+}
+
+</style>
+
+<script>
+// ===== CẤU HÌNH API (đổi sang URL Apps Script của anh) =====
+window.PTKV3_API = 'https://script.google.com/macros/s/AKfycbzqMdQxvITlXYnjDSyEsvlEqxHKbOQ0y3ldQMsz04pHOJ4itsf-s3gNQhkj6i5YYfe2/exec';
+</script>
+</head>
+<body>
+
+ 
+<!-- ===== HEADER (đồng bộ Tintuc24) ===== -->
+<header class="header">
+  <nav class="nav" role="navigation" aria-label="Điều hướng chính">
+    <a class="brand" href="index.html">BAN CHỈ HUY PTKV3</a>
+    <a href="index.html">Trang chủ</a>
+    <a href="tintuc24.html">Tin tức</a>
+    <a href="Hoctap.html" aria-current="page">Học tập</a>
+    <a href="kiemtra.html">Kiểm tra</a>
+
+    <div class="nav__item has-dropdown">
+      <a href="#" aria-haspopup="true" aria-expanded="false">Kết quả kiểm tra ▾</a>
+      <div class="dropdown" role="menu" aria-label="Kết quả kiểm tra">
+        <a href="my-results.html" role="menuitem">Kết quả của tôi</a>
+        <a href="leaderboard.html" role="menuitem">Bảng xếp hạng</a>
+      </div>
+    </div>
+
+    <div class="sp"></div>
+    <button class="m-toggle" aria-label="Mở menu">☰</button>
+  </nav>
+</header>
+<!-- ===== MOBILE DRAWER ===== -->
+<aside id="mDrawer" class="m-drawer" aria-hidden="true" role="dialog" aria-label="Menu">
+  <div class="m-head">
+    <a class="m-home" href="index.html" aria-label="Trang chủ" title="Trang chủ">🏠</a>
+    <span class="m-brand">BAN CHỈ HUY PTKV3</span>
+    <button class="m-close" aria-label="Đóng menu">✕</button>
+  </div>
+
+  <nav class="m-menu" role="navigation" aria-label="Menu di động">
+    <a class="m-item" href="index.html">Trang chủ</a>
+    <a class="m-item" href="tintuc24.html">Tin tức</a>
+    <a class="m-item" href="Hoctap.html" aria-current="page">Học tập</a>
+    <a class="m-item" href="kiemtra.html">Kiểm tra</a>
+
+    <button class="m-item m-drop"
+            data-target="#m-result"
+            aria-controls="m-result"
+            aria-expanded="false">
+      Kết quả kiểm tra <span class="caret">▾</span>
+    </button>
+    <div id="m-result" class="m-sub" hidden>
+      <a href="my-results.html">Kết quả của tôi</a>
+      <a href="leaderboard.html">Bảng xếp hạng</a>
+    </div>
+  </nav>
+</aside>
+<div class="m-backdrop" hidden></div>
+
+<div class="container">
+  <h1 class="page-title">HỌC TẬP CHUYÊN ĐỀ</h1>
+
+  <section id="searchBar" class="section">
+    <div class="search-row">
+      <input id="kw" placeholder="Tìm tài liệu theo tên, chuyên đề...">
+      <button class="btn" id="btnFind" type="button">Tìm</button>
+    </div>
+  </section>
+
+  <section id="materials-list"></section>
+</div>
+
+<!-- ===== FOOTER (đồng bộ Tintuc24) ===== -->
+<footer class="footer">
+  <div class="wrap">
+    <strong>PTKV3 • Trung tâm Giáo dục Chính trị số © 2025</strong>
+  </div>
+</footer>
+
+<script>
+/* ===== Core fetch ===== */
+async function apiCall(action, payload = {}) {
+  if (!window.PTKV3_API) throw new Error('Chưa cấu hình PTKV3_API');
+  const u = new URL(window.PTKV3_API);
+  const qs = JSON.stringify(payload);
+  u.searchParams.set('action', action);
+  u.searchParams.set('payload', qs);
+  if (u.toString().length > 1800) {
+    const res = await fetch(window.PTKV3_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify({ action, payload })
+    });
+    const data = await res.json(); if (!data.ok) throw new Error(data.error||'API error'); return data.data||{};
+  }
+  const res = await fetch(u.toString(), { method: 'GET' });
+  const data = await res.json(); if (!data.ok) throw new Error(data.error||'API error'); return data.data||{};
+}
+const el=(t,a={},c=[])=>{const e=document.createElement(t);Object.entries(a).forEach(([k,v])=>{if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;else e.setAttribute(k,v)});(Array.isArray(c)?c:[c]).filter(Boolean).forEach(ch=>e.append(ch));return e;}
+const spinner=()=>{const d=document.createElement('div');d.className='spinner';return d;}
+const showEmpty=(t,m)=>{t.innerHTML='';t.append(el('div',{class:'empty'},m));}
+
+/* ===== Helpers ===== */
+async function quizHasQuestions(fileId){
+  try{ const d = await apiCall('quiz.has',{fileId}); return !!(d && d.count>0); }catch(_){return false;}
+}
+async function loadSections(fileId){
+  try{ const d = await apiCall('materials.sections',{fileId}); return d.items||[]; }catch(_){return [];}
+}
+function cleanTitle(s=''){
+  return String(s).replace(/\.(pdf|docx?|pptx?|xlsx?)$/i,'');
+}
+// Lấy ảnh xem trước từ Drive dù không có thumbnail trong Sheets
+function driveThumb(fileId){
+  // sz=w900 cho ảnh đủ nét; Google tự crop & cache
+  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w900`;
+}
+
+function toggleSearch(show){
+  const s = document.getElementById('searchBar');
+  if (s) s.style.display = show ? '' : 'none';
+}
+const STORAGE = {
+  CURRENT: 'ptkv3.currentMaterial',       // {fileId, 'tieu-de': ...}
+  CHAT_PREFIX: 'ptkv3.chat.'              // CHAT_PREFIX + fileId => [{who, html}]
+};
+
+/* ===== Page: list ===== */
+const $list = document.getElementById('materials-list');
+document.getElementById('btnFind').addEventListener('click', ()=> searchAndMount($list, document.getElementById('kw').value));
+document.getElementById('kw').addEventListener('keydown', e=>{ if(e.key==='Enter') searchAndMount($list, e.target.value); });
+
+async function searchAndMount(container, keyword=''){ await mountMaterials(container, keyword); }
+
+async function mountMaterials(container, keyword=''){
+  container.innerHTML=''; container.append(spinner());
+  try{
+    const data = await apiCall('tailieu.danh-sach', {'tu-khoa': keyword});
+    container.innerHTML='';
+    const gridWrap = el('div',{class:'grid-drive'});
+    // Kiểm tra quiz cho từng tài liệu (để ẩn nút ngoài)
+    const items = data.items || [];
+    // Load song song hasQuiz:
+    const flags = await Promise.all(items.map(m=>quizHasQuestions(m.fileId)));
+
+    items.forEach((m, idx)=>{
+      const hasQuiz = !!flags[idx];
+      const titleClean = String(m['tieu-de']||'').replace(/\.pdf$/i,'');
+      const card = el('div',{class:'drive-card'});
+      card.style.cursor = 'pointer';
+      card.setAttribute('tabindex','0'); // hỗ trợ Enter/Space
+
+      // Header: [chip PDF] [tiêu đề 1 dòng …] [kebab]
+      const head = el('div',{class:'drive-head'});
+      head.append(el('span',{class:'mime'},'PDF'));
+      head.append(el('div',{class:'drive-title'}, titleClean));
+      head.append(el('span',{style:'opacity:.4'},'⋮'));
+      card.append(head);
+
+      // Thumbnail trong KHUNG (ảnh tràn kín khung)
+      const thumbSrc = (m.thumbnail && m.thumbnail.trim()) ? m.thumbnail : driveThumb(m.fileId);
+      const body  = el('div',{class:'drive-body'});
+      const frame = el('div',{class:'drive-frame'});              // khung chứa ảnh
+      frame.append(el('img',{src:thumbSrc, alt:titleClean}));     // ảnh tràn khung
+      body.append(frame);
+      card.append(body);
+
+      if (m['chu-de']) {
+        const meta = el('div',{style:'padding:0 12px 12px'});
+        meta.append(el('span',{class:'badge'}, m['chu-de']));
+        card.append(meta);
+      }
+
+      // Chỉ hiện “Ôn tập” nếu CHƯA có câu hỏi trong Sheets
+      if (!hasQuiz){
+        const act = el('div',{style:'padding:0 12px 12px;display:flex;justify-content:flex-start'});
+        const btn = el('button',{class:'btn',type:'button',style:'background:#facc15;color:#111;font-weight:700;border:none'},'Ôn tập');
+        btn.onclick = (e)=>{ e.stopPropagation(); mountQuizOnly(container,m); };
+        act.append(btn); card.append(act);
+      }
+
+      card.addEventListener('click', ()=> mountMaterialView(container, m));
+
+      gridWrap.append(card);        // <-- append vào gridWrap
+    });
+
+    if(!gridWrap.children.length){ showEmpty(container,'Chưa có tài liệu.'); return; }
+    container.append(gridWrap);
+    toggleSearch(true);
+  }catch(e){
+    showEmpty(container,'Lỗi tải dữ liệu: '+ (e && e.message ? e.message : e));
+  }
+}
+
+function openAIDock(fileMeta, targetEl, opts = { reset: false }){
+  const mountAt = targetEl 
+    || document.querySelector('.split .grid') 
+    || document.querySelector('.grid') 
+    || document.body;
+
+  // Luôn remove dock cũ để render sạch
+  const oldDock = document.querySelector('.ai-dock');
+  if (oldDock) oldDock.remove();
+
+  // Reset chat khi mở tài liệu mới (không reset khi F5)
+  const chatKey = STORAGE.CHAT_PREFIX + fileMeta.fileId;
+  if (opts.reset) sessionStorage.removeItem(chatKey);
+
+  // Tạo dock mới
+  const dock = document.createElement('div');
+  dock.className = 'ai-dock';
+  dock.innerHTML = `
+    <div class="head">
+      <span>Trò chuyện với AI</span>
+      <div style="display:flex;gap:6px">
+        <button id="aiMin" class="btn" aria-hidden="true">−</button>
+        <button id="aiClose" class="btn" aria-hidden="true">×</button>
+      </div>
+    </div>
+    <div class="body" id="aiBody"></div>
+    <div class="input">
+      <input id="aiInput" placeholder="Nhập câu hỏi..." />
+      <button id="aiSend" class="btn">Gửi</button>
+    </div>
+  `;
+  mountAt.prepend(dock);
+
+  const box = dock.querySelector('#aiBody');
+  const inp = dock.querySelector('#aiInput');
+  const btn = dock.querySelector('#aiSend');
+
+  // helpers
+  const esc = s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const add = (who, html)=>{
+    const div = document.createElement('div');
+    div.className = 'bubble ' + (who==='user' ? 'user' : 'ai');
+    div.innerHTML = html;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  };
+  const saveChat = ()=>{
+    // lưu toàn bộ bubbles (nhẹ nhàng) vào sessionStorage
+    const nodes = [...box.querySelectorAll('.bubble')].map(n=>{
+      return { who: n.classList.contains('user')?'user':'ai', html: n.innerHTML };
+    });
+    sessionStorage.setItem(chatKey, JSON.stringify(nodes));
+  };
+  const restoreChat = ()=>{
+    const raw = sessionStorage.getItem(chatKey);
+    box.innerHTML = '';
+    if (!raw){
+      add('ai','Chào bạn! Mình có thể giúp gì được cho bạn?');
+      return;
+    }
+    try{
+      const arr = JSON.parse(raw);
+      arr.forEach(m=>add(m.who, m.html));
+    }catch{
+      add('ai', 'Xin chào! Em là Trợ lý học tập AI của PTKV3 🌟. Anh/chị muốn em giúp gì trong tài liệu này ạ?');
+    }
+  };
+
+  const ask = async ()=>{
+    const q = inp.value.trim(); if(!q) return;
+    add('user', esc(q)); inp.value='';
+    saveChat();
+    const wait = document.createElement('div'); wait.className='bubble ai'; wait.textContent='Đang suy nghĩ...'; box.append(wait);
+
+    try{
+      const r = await apiCall('ai.chat',{ fileId:fileMeta.fileId, section:'', 'cau-hoi': q });
+      const src = r.source ? `<small>📚 Nguồn: ${esc(r.source)}</small>` : '';
+      wait.innerHTML = (r.answer || '(không có phản hồi)').replace(/\n/g,'<br>') + src;
+    }catch(e){
+      wait.innerHTML = '<b>Lỗi:</b> ' + esc(e.message||e);
+    }
+    saveChat();
+    box.scrollTop = box.scrollHeight;
+  };
+
+  inp.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); ask(); } };
+  btn.onclick = ask;
+
+  // Khôi phục khi F5, hoặc greeting mới khi mở lần đầu
+  restoreChat();
+}
+
+
+/* ===== Material view (viewer + AI + Câu hỏi ôn tập) ===== */
+async function mountMaterialView(root, meta){
+  root.innerHTML='';
+  const searchSection = document.getElementById('searchBar');
+  if (searchSection) searchSection.classList.add('is-hidden');
+
+  // lưu trạng thái đang xem (để F5 khôi phục)
+  localStorage.setItem(STORAGE.CURRENT, JSON.stringify({fileId: meta.fileId, 'tieu-de': meta['tieu-de']||'Tài liệu'}));
+
+  const backToList = ()=>{
+    if(searchSection) searchSection.classList.remove('is-hidden');
+    localStorage.removeItem(STORAGE.CURRENT); // bấm quay lại thì thôi giữ trạng thái
+    mountMaterials(root);
+  };
+
+  // Thanh tiêu đề + nút back (bên phải)
+  const titleClean = cleanTitle(meta['tieu-de']||'Tài liệu');
+  const bar = el('div',{class:'card'});
+  bar.append(el('div',{html:`
+  <div class="mat-bar" style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+    <h2 style="margin:0;font-size:22px;font-weight:800;color:#7f1d1d">${titleClean}</h2>
+    <button class="btn back" id="back">Quay lại Chuyên đề</button>
+  </div>`}));
+  bar.querySelector('#back').onclick = backToList;
+  root.append(bar);
+// === TÁCH NÚT BACK RA NGOÀI KHUNG (mobile) – Desktop giữ nguyên ===
+const backBtn = bar.querySelector('#back');
+const barRow  = bar.querySelector('.mat-bar');
+
+// Tạo wrapper và đặt NGAY TRƯỚC khối card tiêu đề
+const backWrap = document.createElement('div');
+backWrap.className = 'btn-back-wrapper';
+root.insertBefore(backWrap, bar);
+
+// Hàm bố trí nút theo kích thước màn hình
+const mq = window.matchMedia('(max-width: 768px)');
+function placeBack(){
+  if (mq.matches) {
+    // Mobile: chuyển nút ra wrapper (ngoài khung)
+    if (backBtn && backBtn.parentNode !== backWrap) backWrap.appendChild(backBtn);
+  } else {
+    // Desktop: đưa nút về lại trong khung tiêu đề
+    if (backBtn && backBtn.parentNode !== barRow) barRow.appendChild(backBtn);
+  }
+}
+placeBack();
+// Lắng nghe thay đổi màn hình
+if (mq.addEventListener) mq.addEventListener('change', placeBack);
+else mq.addListener(placeBack); // fallback cho trình duyệt cũ
+
+  const wrap = el('div',{class:'split'});
+
+  // LEFT: Viewer
+  const viewer = el('section',{class:'section viewer'});
+  const iframe = el('iframe',{src:`https://drive.google.com/file/d/${meta.fileId}/preview`,allow:'autoplay'});
+  viewer.append(iframe);
+  wrap.append(viewer);
+
+  // RIGHT: AI + Quiz
+  const right = el('div',{class:'grid'});
+
+  // Trò chuyện với AI NẰM TRONG TRANG
+  openAIDock(meta, right);
+  
+  // ===== QUIZ: “Câu hỏi ôn tập” kiểu tuần tự =====
+  const quizBox = el('section',{class:'section quiz'});
+  quizBox.append(el('div',{html:'<strong>🧩 Câu hỏi ôn tập</strong>'}));
+  const qWrap = el('div'); quizBox.append(qWrap);
+  right.append(quizBox);
+
+  wrap.append(right); root.append(wrap);
+  
+  // Hàm đồng bộ chiều cao viewer >= cột phải
+  const syncViewerHeight = ()=>{
+    const hRight = right.offsetHeight;
+    const minH = Math.max(hRight, Math.round(window.innerHeight*0.72));
+    iframe.style.height = minH + 'px';
+  };
+
+
+  // load quiz (từ Sheets – quản trị đã nhập sẵn)
+  try{
+    const data = await apiCall('quiz.getByFile',{fileId:meta.fileId,limit:10});
+    const items = data.items||[];
+    if(!items.length){ qWrap.innerHTML = '<div class="empty">Chưa có câu hỏi ôn tập cho tài liệu này.</div>'; }
+    else{
+      const state = { idx:0, answers:{} };
+      const render = ()=>{
+        const it = items[state.idx];
+        qWrap.innerHTML = `
+          <div class="q">Câu ${state.idx+1}/${items.length}. ${it.q}</div>
+          <ul>
+            ${it.options.map((op,i)=>`
+              <li><label><input type="radio" name="q${state.idx}" value="${op}" ${state.answers[state.idx]===op?'checked':''}> ${op}</label></li>
+            `).join('')}
+          </ul>
+          <div class="nav">
+            <button class="btn ghost" id="btnPrev" ${state.idx===0?'disabled':''}>Quay lại</button>
+            ${state.idx<items.length-1
+              ? '<button class="btn" id="btnNext">Tiếp tục</button>'
+              : '<button class="btn" id="btnFinish">Kết thúc</button>'}
+          </div>
+        `;
+        qWrap.querySelectorAll('input[type="radio"]').forEach(r=>{
+          r.onchange = ()=>{ state.answers[state.idx]=r.value; };
+        });
+        const prev=qWrap.querySelector('#btnPrev'), next=qWrap.querySelector('#btnNext'), fin=qWrap.querySelector('#btnFinish');
+        if(prev) prev.onclick = ()=>{ state.idx--; render(); };
+        if(next) next.onclick = ()=>{ state.idx++; render(); };
+        if(fin)  fin.onclick  = ()=> finish();
+         syncViewerHeight();
+      };
+      const finish = ()=>{
+        let correct=0; items.forEach((it,i)=>{ if(state.answers[i]===it.answer) correct++; });
+        const total=items.length, pct=Math.round(correct*100/total);
+        qWrap.innerHTML = `
+          <div class="result-card">
+            <div style="font-weight:800;font-size:18px;">🎉 Chúc mừng bạn đã hoàn thành nội dung ôn tập!</div>
+            <div style="margin-top:6px">Kết quả: <strong>${correct}/${total}</strong> (${pct}%).</div>
+          </div>`;
+          syncViewerHeight();
+      };
+      render();
+    }
+  }catch(e){
+    qWrap.innerHTML = '<div class="empty">Không tải được câu hỏi: '+e.message+'</div>';
+  }
+// sync khi resize
+  window.addEventListener('resize', syncViewerHeight, {passive:true});
+  // sync ban đầu (sau layout)
+  setTimeout(syncViewerHeight, 0);
+}
+/* ===== Optional: trang Ôn tập riêng (nếu bấm nút ngoài) ===== */
+async function mountQuizOnly(root, meta){
+  root.innerHTML='';
+  const nav = el('div',{class:'card', html:`<button class="btn ghost" id="back">&larr; Quay lại Học tập</button>`});
+  nav.querySelector('#back').onclick = ()=> mountMaterials(root);
+  root.append(nav);
+  root.append(el('div',{class:'card',html:`<h2 style="margin:0">Ôn tập: ${meta['tieu-de']||'Tài liệu'}</h2>`}));
+
+  const quiz = el('section',{class:'section quiz'}); root.append(quiz);
+  const box = el('div',{}); quiz.append(box);
+
+  try{
+    const data = await apiCall('quiz.getByFile',{fileId:meta.fileId,limit:10});
+    const items = data.items||[];
+    if(!items.length){ box.innerHTML = '<div class="empty">Chưa có câu hỏi.</div>'; return; }
+
+    const state = { idx:0, answers:{} };
+    const render = ()=>{
+      const it = items[state.idx];
+      box.innerHTML = `
+        <div class="q">Câu ${state.idx+1}/${items.length}. ${it.q}</div>
+        <ul>
+          ${it.options.map((op,i)=>`
+            <li><label><input type="radio" name="qb${state.idx}" value="${op}" ${state.answers[state.idx]===op?'checked':''}> ${op}</label></li>
+          `).join('')}
+        </ul>
+        <div class="nav">
+          <button class="btn ghost" id="btnPrev" ${state.idx===0?'disabled':''}>Quay lại</button>
+          ${state.idx<items.length-1
+            ? '<button class="btn" id="btnNext">Tiếp tục</button>'
+            : '<button class="btn" id="btnFinish">Kết thúc</button>'}
+        </div>
+      `;
+      box.querySelectorAll('input[type="radio"]').forEach(r=>{
+        r.onchange = ()=>{ state.answers[state.idx]=r.value; };
+      });
+      const prev=box.querySelector('#btnPrev'), next=box.querySelector('#btnNext'), fin=box.querySelector('#btnFinish');
+      if(prev) prev.onclick = ()=>{ state.idx--; render(); };
+      if(next) next.onclick = ()=>{ state.idx++; render(); };
+      if(fin)  fin.onclick  = ()=> finish();
+    };
+    const finish = ()=>{
+      let correct=0; items.forEach((it,i)=>{ if(state.answers[i]===it.answer) correct++; });
+      const total=items.length, pct=Math.round(correct*100/total);
+      box.innerHTML = `
+        <div class="result-card">
+          <div style="font-weight:800;font-size:18px;">🎉 Chúc mừng bạn đã hoàn thành!</div>
+          <div style="margin-top:6px">Kết quả: <strong>${correct}/${total}</strong> (${pct}%).</div>
+        </div>`;
+      // có thể lưu kết quả nếu muốn:
+      // apiCall('exam.saveResult',{fileId:meta.fileId, title:meta['tieu-de']||'', correct, total, score:pct}).catch(()=>{});
+    };
+    render();
+  }catch(e){ box.innerHTML='<div class="empty">Không tạo được câu hỏi: '+e.message+'</div>'; }
+
+  nav.querySelector('#back').onclick = ()=>{ 
+    const searchSection = document.querySelector('.container .section');
+    if (searchSection) searchSection.classList.remove('is-hidden');
+    mountMaterials(root);
+  };
+}
+
+/* boot */
+const saved = localStorage.getItem(STORAGE.CURRENT);
+  if (saved){
+    // ở lại trang đọc, khôi phục đúng tài liệu + AI chat
+    const meta = JSON.parse(saved);
+    // đảm bảo có khóa 'tieu-de' để render tiêu đề đẹp
+    if (!meta['tieu-de']) meta['tieu-de'] = 'Tài liệu';
+    mountMaterialView(document.getElementById('materials-list'), meta);
+  }else{
+    // không có trạng thái -> trang danh sách
+    mountMaterials(document.getElementById('materials-list'));}
+
+(function(){
+  const drawer   = document.getElementById('mDrawer');
+  const backdrop = document.querySelector('.m-backdrop');
+  const openBtn  = document.querySelector('.m-toggle');
+  const closeBtn = drawer?.querySelector('.m-close');
+
+  const focusables = 'a,button,[tabindex]:not([tabindex="-1"])';
+  let lastFocus = null;
+
+  // ✅ Đảm bảo panel con luôn đóng mặc định
+  document.querySelectorAll('.m-sub').forEach(p => p.hidden = true);
+  document.querySelectorAll('.m-drop').forEach(b => b.setAttribute('aria-expanded','false'));
+
+  function open(){
+    lastFocus = document.activeElement;
+    document.body.classList.add('menu-open','no-scroll');
+    drawer?.setAttribute('aria-hidden','false');
+    if (backdrop) backdrop.hidden = false;
+    drawer?.querySelector(focusables)?.focus?.();
+  }
+  function close(){
+    document.body.classList.remove('menu-open','no-scroll');
+    drawer?.setAttribute('aria-hidden','true');
+    if (backdrop) backdrop.hidden = true;
+    lastFocus?.focus?.();
+  }
+
+  openBtn?.addEventListener('click', open);
+  closeBtn?.addEventListener('click', close);
+  backdrop?.addEventListener('click', close);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
+
+  drawer?.addEventListener('click', e=>{
+    const btn = e.target.closest('.m-drop');
+    if(!btn) return;
+    const id = btn.getAttribute('aria-controls') || btn.dataset.target?.replace('#','');
+    const panel = id ? document.getElementById(id) : null;
+    if(!panel) return;
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+    panel.hidden = expanded ? true : false;
+  });
+
+  // Đóng drawer khi chọn bất kỳ link
+  drawer?.addEventListener('click', e=>{
+    const a = e.target.closest('a');
+    if(a) close();
+  });
+})();    
+</script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kết quả kiểm tra – PTKV3</title>
+<link rel="stylesheet" href="css/nav.css?v=20251006">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --brand:#A41919;          /* đỏ PTKV3 */
+  --brand-deep:#7F1515;
+  --gold:#FFD966;           /* vàng ánh kim */
+  --ink:#0f172a;            /* chữ */
+  --muted:#cbd5e1;
+  --panel:#0f253f;          /* xanh đậm panel như mockup */
+  --panel-2:#122b48;
+  --radius:20px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Be Vietnam Pro",Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#fff}
+body{
+  /* nền gradient đỏ giống mockup */
+  background:
+    radial-gradient(1200px 500px at 50% 110%, #6e0f0f 0%, #5a0c0c 60%, transparent 100%),
+    radial-gradient(900px 600px at 10% -10%, #7f1515 0%, transparent 60%),
+    linear-gradient(180deg, #A41919 0%, #7F1515 100%);
+  min-height:100vh; display: flex;
+  flex-direction: column; align-items: stretch;
+}
+
+/* MAIN */
+.main-bg{
+  color:#fff;
+  background:
+    radial-gradient(1200px 500px at 50% 110%, #6e0f0f 0%, #5a0c0c 60%, transparent 100%),
+    radial-gradient(900px 600px at 10% -10%, #7f1515 0%, transparent 60%),
+    linear-gradient(180deg, #A41919 0%, #7F1515 100%);
+}
+main{max-width:980px; margin:0 auto; padding:40px 20px 72px}
+.center{display:flex; flex-direction:column; align-items:center; text-align:center}
+
+/* Icon kết quả */
+.badge{
+  position: relative;
+  width: 110px; height: 110px; border-radius: 50%;
+  background: #FFD966;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+  margin: 6px auto 14px;
+}
+.badge::after{
+  content:"";
+  position:absolute; inset:12px;
+  background:#A41919; border-radius:50%;
+  z-index: 1;
+}
+.badge svg{
+  position:absolute; left:50%; top:50%;
+  width:95px; height:95px;
+  transform:translate(-50%,-50%);
+  fill:#FFD966;
+  z-index: 2;
+}
+
+/* Tiêu đề */
+h1{margin:10px 0 28px 0;font-size:44px;line-height:1.15;font-weight:700;color:#fff}
+
+/* CARD kết quả */
+.card{
+  width:min(500px,100%);background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border-radius:24px;padding:28px 22px;margin-top:6px;
+  box-shadow:0 18px 40px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08)
+}
+.score{font-size:64px;font-weight:900;letter-spacing:.5px;margin:4px 0 6px}
+.meta{color:var(--muted);font-size:18px;line-height:1.6}
+.meta strong{color:#fff}
+
+/* Nút */
+.actions{display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+.btn{
+  appearance:none;border:0;cursor:pointer;font-weight:700;border-radius:14px;
+  padding:14px 18px;font-size:20px;transition:transform .05s ease, opacity .15s ease
+}
+.btn:active{transform:translateY(1px)}
+.btn.dark{background:#1e3a5f;color:#fff;border:1px solid rgba(255,255,255,.08); height: 60px; width: 200px;}
+.btn.dark:hover{opacity:.92}
+.btn.gold{background:linear-gradient(180deg,#FFD966,#E6C34D);color:#5b4300}
+.btn.gold:hover{opacity:.95}
+
+/* responsive */
+@media (max-width:768px){
+  h1{font-size:32px}
+  .score{font-size:56px}
+  .header{padding:14px 16px}
+  .nav{gap:14px;font-size:14px}
+}
+
+/* HEADER + FOOTER */
+.header{position:sticky;top:0;z-index:999;font-weight:600;background:linear-gradient(90deg,#7f1d1d,#b91c1c 45%,#dc2626);color:#fff}
+.nav{max-width:1200px;margin:auto;display:flex;gap:18px;align-items:center;padding:12px 16px;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+.nav .brand{font-weight:800}
+.nav a{color:#fff;text-decoration:none;padding:6px 10px;border-radius:8px}
+.nav a[aria-current="page"]{background:rgba(0,0,0,.18)}
+.nav a:hover{color:#FFD966;transform:scale(1.06)}
+.m-toggle{display:none!important;background:transparent;border:0;color:#fff;font-size:28px;line-height:1}
+.footer{margin-top:auto;background:#111827;color:#cbd5e1; }
+.footer .wrap{max-width:1200px;margin:auto;padding:20px 16px;font-size:15px; text-align: center;}
+
+/* Drawer mobile (giữ nguyên cấu trúc) */
+@media (max-width:1024px){
+  .nav a:not(.brand), .nav .has-dropdown{display:none!important}
+  .m-toggle{display:block!important;margin-left:auto}
+  .m-drawer{
+    position:fixed; inset:0 auto 0 0; width:86vw; max-width:420px; transform:translateX(-100%);
+    background:linear-gradient(180deg,#7f1d1d,#b91c1c 55%,#9d1414); color:#fff; z-index:120;
+    transition:transform .25s ease; box-shadow:4px 0 30px rgba(0,0,0,.25);
+    font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+  }
+  .m-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.35); backdrop-filter:blur(2px);
+    z-index:110; opacity:0; transition:opacity .25s; pointer-events:none;
+  }
+  body.menu-open .m-drawer{transform:translateX(0)}
+  body.menu-open .m-backdrop{opacity:1; pointer-events:auto}
+  body.no-scroll{overflow:hidden}
+}
+</style>
+</head>
+<body>
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <nav class="nav">
+    <a class="brand" href="index.html">BAN CHỈ HUY PTKV3</a>
+    <a href="index.html">Trang chủ</a>
+    <a href="tintuc24.html">Tin tức</a>
+    <a href="Hoctap.html">Học tập</a>
+    <a href="kiemtra.html">Kiểm tra</a>
+    <div class="sp"></div>
+  </nav>
+  <div class="m-backdrop" hidden></div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="center">
+  <div class="badge" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M9.5 16.2L5.8 12.5l1.4-1.4 2.3 2.3L16.8 5l1.4 1.4L9.5 16.2z"/></svg>
+  </div>
+
+  <!-- Tiêu đề sẽ được cập nhật theo kỳ thi -->
+  <h1 id="title">Hoàn thành kiểm tra</h1>
+
+  <section class="card" role="region" aria-label="Kết quả">
+    <div class="score" id="score">--/--</div>
+    <div class="meta">
+      Số câu trả lời đúng: <strong id="correct">—</strong><br/>
+      Thời gian làm bài: <strong id="time">—:—</strong>
+    </div>
+    <div class="actions">
+      <button class="btn dark" id="btn-again" title="Làm lại kỳ thi này">Làm lại</button>
+      <button class="btn gold" id="btn-back" title="Quay về danh sách kỳ thi">Về trang kiểm tra</button>
+    </div>
+  </section>
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="wrap">
+    <strong>PTKV3 • Trung tâm Giáo dục Chính trị số © 2025</strong>
+  </div>
+</footer>
+
+<script>
+/* ====== Nhận dữ liệu thật (đồng bộ kiến trúc) ======
+ * Nguồn 1 (khuyên dùng): URL query
+ *   ketqua.html?correct=8&total=10&time=08:23&bank=CTDT-2025&mode=exam
+ * Nguồn 2: window.PTKV3_EXAM_RESULT (fallback)
+ * Tiêu đề: ưu tiên lấy từ sessionStorage("ptkv3:exam:current").title
+ */
+(function(){
+  const qs = new URLSearchParams(location.search);
+  const Q = {
+    correct: qs.get('correct'),
+    total:   qs.get('total'),
+    time:    qs.get('time'),
+    bank:    qs.get('bank') || '',
+    mode:    qs.get('mode') || 'exam'
+  };
+  const D = window.PTKV3_EXAM_RESULT || {};
+  const correct = Number(Q.correct ?? D.correct);
+  const total   = Number(Q.total   ?? D.total);
+  const time    = (Q.time ?? D.time) || '';
+
+  // Hiển thị điểm
+  const elScore   = document.getElementById('score');
+  const elCorrect = document.getElementById('correct');
+  const elTime    = document.getElementById('time');
+
+  if(Number.isFinite(correct) && Number.isFinite(total) && total>0){
+    elScore.textContent   = `${correct}/${total}`;
+    elCorrect.textContent = String(correct);
+  } else {
+    elScore.textContent   = '--/--';
+    elCorrect.textContent = '—';
+  }
+  elTime.textContent = time || '—:—';
+
+  // Tiêu đề kỳ thi
+  const titleEl = document.getElementById('title');
+  try{
+    const s = sessionStorage.getItem('ptkv3:exam:current');
+    if(s){
+      const cur = JSON.parse(s);
+      if(cur && cur.title){
+        titleEl.textContent = cur.title.toUpperCase();
+      }
+    }
+  }catch(e){ /* ignore */ }
+
+  // Nút hành vi (điều hướng đúng kiến trúc)
+  const againBtn = document.getElementById('btn-again');
+  const backBtn  = document.getElementById('btn-back');
+
+  againBtn.addEventListener('click', ()=>{
+    // Mở lại trang làm bài cùng bank/mode (nếu có)
+    const params = new URLSearchParams();
+    if(Q.bank) params.set('bank', Q.bank);
+    if(Q.mode) params.set('mode', Q.mode);
+    const url = 'lambai.html' + (params.toString() ? `?${params}` : '');
+    location.href = url;
+  });
+
+  backBtn.addEventListener('click', ()=>{
+    // Về danh sách kỳ thi
+    location.href = 'kiemtra.html';
+  });
+})();
+</script>
+</body>
+</html>
