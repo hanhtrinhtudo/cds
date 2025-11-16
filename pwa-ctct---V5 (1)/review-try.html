@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Xem lại & Giải thích — Thi thử</title>
+
+  <!-- 1. Global trước -->
+  <link rel="stylesheet" href="css/style.css">
+  <!-- 2. Review UI sau để ghi đè -->
+  <link rel="stylesheet" href="css/review-polish.css">
+</head>
+<body data-page="try">
+  <!-- Header + Toolbar + Pills + List như trang review chuẩn của mình -->
+  <header class="hdr">
+    <div class="container hdr__inner">
+      <button class="hdr__back" onclick="history.back()">Trang chủ</button>
+      <h1 class="hdr__title">XEM LẠI &amp; GIẢI THÍCH — THI THỬ</h1>
+    </div>
+  </header>
+
+  <div class="bar">
+    <div class="container bar__inner">
+      <label class="chip"><input type="checkbox" id="onlyWrong"> Chỉ hiện câu sai</label>
+      <div class="search"><span aria-hidden>🔎</span><input id="searchBox" placeholder="Nhập từ khoá..."></div>
+      <button class="btn" id="printBtn">🖨️ In/PDF</button>
+    </div>
+  </div>
+
+  <section class="container">
+    <div class="pills">
+      <span class="pill">📊 Tổng câu: <b id="stTotal">0</b></span>
+      <span class="pill ok">✔ Đúng: <b id="stOk">0</b></span>
+      <span class="pill bad">✖ Sai: <b id="stBad">0</b></span>
+      <span class="pill skip">⏳ Chưa TL: <b id="stSkip">0</b></span>
+      <span class="spacer">Hiển thị: <b id="stShown">0</b> mục</span>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="list" id="reviewList"></div>
+  </main>
+
+ <nav class="container nav-actions" id="navActions">
+  <a class="sr-only" href="quiz.html">Làm lại</a>
+  <button class="btn btn--ghost"   data-href="quiz.html"      type="button">⟳ Làm lại</button>
+
+  <a class="sr-only" href="materials.html">Tài liệu</a>
+  <button class="btn btn--ghost"   data-href="materials.html" type="button">📚 Tài liệu học tập</button>
+
+  <a class="sr-only" href="index.html">Trang chủ</a>
+  <button class="btn btn--primary" data-href="index.html"     type="button">🏠 Về Trang chủ</button>
+  </nav>
+
+  <style>
+  .sr-only{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
+  </style>
+
+  <script>
+  const base = ''; // '../' nếu cần
+  document.getElementById('navActions')?.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-href]');
+    if(!btn) return;
+    const url = btn.getAttribute('data-href');
+    if(url) window.location.href = base + url;
+  });
+  </script>
+
+  <!-- (tuỳ chọn) cấu hình route nếu cần đổi đường dẫn scr/src -->
+  <script>
+    window.REVIEW_ROUTES = {
+      home: 'index.html',
+      materials: 'materials.html',
+      againByPage: { try: 'quiz.html' } // đổi thành ../src/... nếu đúng
+    };
+  </script>
+  <script src="js/review-core.js"></script>
+  <button id="toTop" class="to-top" aria-label="Lên đầu trang" title="Lên đầu"
+        onclick="window.scrollTo({top:0, behavior:'smooth'})">
+  ⬆ Lên đầu
+</button>
+</body>
+</html>

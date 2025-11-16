@@ -32,7 +32,7 @@ body{
 .header__right{justify-self:end;display:flex;align-items:center;gap:10px}
 .clock{
   width:40px; height:40px; border-radius:999px;
-  background:var(--ptk-gold);             /* nền vàng */
+  background:var(--ptk-gold);
   display:grid; place-items:center;
   border:2px solid #fff8;
   box-shadow:inset 0 0 0 2px rgba(0,0,0,.05), 0 3px 6px rgba(0,0,0,.18);
@@ -56,10 +56,31 @@ body{
 
 /* TITLE RIBBON */
 .title-ribbon{
-  margin-top:16px;width:100%;height:60px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#9F1B16 0%,#7F1212 100%);color:var(--ptk-gold);
-  font-weight:700;letter-spacing:.5px;font-size:22px;
-  box-shadow:inset 0 -2px 0 rgba(0,0,0,.15),0 6px 16px rgba(0,0,0,.18)
+  margin-top: 16px;
+  width: 100%;
+  height: auto;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(180deg, #9F1B16 0%, #7F1212 100%);
+  color: var(--ptk-gold);
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  font-size: clamp(20px, 4.8vw, 28px);
+  line-height: 1.3;
+  padding: 8px 12px;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,.15), 0 6px 16px rgba(0,0,0,.18);
+}
+
+/* Mobile giữ cân đối, không quá to */
+@media (max-width: 640px){
+  .title-ribbon{
+    font-size: clamp(18px, 5vw, 24px);
+    padding: 14px 10px;
+    min-height: 68px;
+  }
 }
 
 /* MAIN */
@@ -105,12 +126,13 @@ main{flex:1 0 auto}
 
 /* FOOTER */
 .footer{ background:var(--ptk-red-3); color:#fff; margin-top:28px }
-.footer__inner{ max-width:1280px; margin:0 auto; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.footer__links{ display:flex; align-items:center; gap:20px; position:relative }
+.footer__inner{ max-width:1280px; margin:0 auto; padding:12px 16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center;}
+.footer__inner > div{color: var(--ptk-gold); font-weight:600;margin-top:2px;}
+.footer__links{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:16px; order:-1;}
 .footer__links a,
-.footer__links .sub-trigger{ color:#fff; text-decoration:none; opacity:.92; font-weight:600; display:inline-flex; align-items:center; gap:6px; background:transparent; border:0; padding:6px 8px; cursor:pointer; transition:color .15s ease, opacity .15s ease, transform .15s ease; }
+.footer__links .sub-trigger{ color:#fff; text-decoration:none; font-weight:600; opacity:.95; background:transparent !important; border:0; padding:6px 10px; border-radius:8px; transition:color .15s ease, background .15s ease;}
 .footer__links a:hover,
-.footer__links .sub-trigger:hover{ color:var(--ptk-gold); text-decoration:underline; opacity:1; }
+.footer__links .sub-trigger:hover{ color:var(--ptk-gold); text-decoration:underline;background:rgba(255,217,102,.15);}
 .has-sub{ position:relative }
 .sub-trigger svg{ transform:translateY(1px); opacity:.9 }
 .submenu{ position:absolute; bottom: calc(100% + 8px); right:0; z-index:10; display:none; min-width:220px; padding:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.25); box-shadow:0 12px 28px rgba(0,0,0,.25); backdrop-filter: blur(4px); border-radius:12px; }
@@ -130,6 +152,105 @@ main{flex:1 0 auto}
   .grid-nums{ grid-template-columns: repeat(8, 1fr); gap: 10px; }
   .num{ aspect-ratio:1/1; min-height:44px; border-radius:8px; padding:0; height:auto; }
 }
+
+/* ========= MOBILE OVERRIDES (≤640px) ========= */
+@media (max-width: 640px){
+
+  .container{ padding: 0 12px; }
+  .grid{ grid-template-columns: 1fr !important; gap: 16px; }
+
+  .header__inner{
+    grid-template-columns: 1fr auto;
+    padding: 10px 14px;
+  }
+  .brand{ font-size: 16px; }
+  .clock{ width: 52px; height: 52px; }
+  .clock svg{ width: 32px; height: 32px; }
+  .timer{
+    font-size: 16px;
+    padding: 6px 10px;
+    border-width: 1px;
+  }
+
+  .title-ribbon{
+    height: 48px;
+    font-size: clamp(18px, 5vw, 24px);
+    letter-spacing: .3px;
+    margin-top: 10px;
+  }
+
+  .card__body{ padding: 16px 14px 6px; }
+  .q-num{ font-size: 18px; margin-bottom: 6px; }
+  .q-text{ font-size: 16px; line-height: 1.45; margin-bottom: 8px; }
+  .options{ gap: 10px; margin: 10px 0 2px; }
+  .opt{
+    grid-template-columns: 40px 1fr;
+    min-height: 52px;
+    padding: 6px 12px;
+    border-radius: 10px;
+  }
+  .opt__letter{ width: 28px; height: 28px; border-radius: 8px; font-size: 13px; }
+  .opt__text{ font-size: 14px; }
+
+  .card__actions{
+    padding: 12px 14px 16px;
+    gap: 8px;
+  }
+  .btn{
+    height: 44px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+  #btnPrev, #btnNext{
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .panel{ padding: 14px 12px 16px; border-radius: 12px; }
+  .panel h3{ font-size: 15px; margin-bottom: 10px; }
+  .grid-nums{ grid-template-columns: repeat(8, 1fr); gap: 8px; }
+  .num{
+    aspect-ratio: 1/1;
+    min-height: 40px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .submit-wrap{ padding: 2px 0 0; }
+  .submit-btn{
+    width: 50px;
+    height: 48px;
+    font-size: 18px;
+    border-radius: 999px;
+  }
+
+  .footer__inner{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 12px;
+  }
+  .footer__links{
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .footer__links a,
+  .footer__links .sub-trigger{
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  .submenu{
+    right: auto;
+    left: 0;
+    min-width: 180px;
+    padding: 8px;
+  }
+  .submenu a{ padding: 8px 10px; font-size: 14px; }
+
+  .card, .panel{ box-shadow: 0 8px 20px rgba(0,0,0,.08); border-radius: 12px; }
+}
+
 </style>
 </head>
 <body>
@@ -140,9 +261,7 @@ main{flex:1 0 auto}
     <div class="header__right">
      <div class="clock" aria-hidden="true">
     <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
-    <!-- Mặt đồng hồ -->
     <circle cx="12" cy="12" r="10" fill="#fff" stroke="#000" stroke-width="1"/>
-    <!-- Vạch 12 hướng (nhẹ) -->
     <g stroke="#000" stroke-width="0.8" opacity="0.25">
       <line x1="12" y1="2.5" x2="12" y2="4.2"/>
       <line x1="12" y1="19.8" x2="12" y2="21.5"/>
@@ -153,11 +272,8 @@ main{flex:1 0 auto}
       <line x1="5.1" y1="18.9" x2="6.3" y2="17.7"/>
       <line x1="17.7" y1="6.3" x2="18.9" y2="5.1"/>
     </g>
-    <!-- Kim phút (quay chậm) -->
     <line id="clkMin" class="hand" x1="12" y1="12" x2="12" y2="5.4" stroke="#000" stroke-width="1.8" stroke-linecap="round"/>
-    <!-- Kim giây (quay đều) -->
     <line id="clkSec" class="hand" x1="12" y1="12" x2="12" y2="3.6" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
-    <!-- Tâm -->
     <circle cx="12" cy="12" r="1.4" fill="#000"/>
   </svg>
 </div>
@@ -174,7 +290,7 @@ main{flex:1 0 auto}
     const data = JSON.parse(sessionStorage.getItem('ptkv3:exam:current') || '{}');
     if(data && data.title){
       const el = document.getElementById('examTitle');
-      el.textContent = data.title.toUpperCase(); // luôn in hoa đậm
+      el.textContent = data.title.toUpperCase();
     }
   }catch(e){ console.warn('Không đọc được tiêu đề kỳ thi', e); }
 })();
@@ -240,7 +356,7 @@ main{flex:1 0 auto}
 <!-- ================== LOGIC ĐỒNG BỘ KIẾN TRÚC ================== -->
 <script>
 /* ===== CONFIG ===== */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbxLc27Q0wjn8fReUd0VGVva63-tihSoEbYAyP2g__uPYTww8QA-fheaKQ0iK43iEao_/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwgpyEWzRG-wpqFSrYVzWiklxda-DY68LN-FHAw1rnd1rON5MBegLfx7gtFOWbUFtteYg/exec';
 const RESULT_PAGE = 'ketqua.html';
 
 /* ===== SESSION / PARAMS ===== */
@@ -248,6 +364,7 @@ const CURRENT = (()=>{try{const s=sessionStorage.getItem('ptkv3:exam:current');r
 const qs = new URLSearchParams(location.search);
 const BANK = CURRENT.bankId || qs.get('bank') || '';
 const MODE = (CURRENT.mode || qs.get('mode') || 'exam');
+const TARGET = CURRENT.target || qs.get('target') || '';   // 💡 Đối tượng (Sĩ quan / QNCN / Cán bộ, QNCN)
 
 /* ===== DOM ===== */
 const $ = (s, r=document)=>r.querySelector(s);
@@ -255,10 +372,10 @@ const qNum=$('#qNum'),qText=$('#qText'),opts=$('#opts'),gridNums=$('#gridNums');
 const btnPrev=$('#btnPrev'),btnNext=$('#btnNext'),btnSubmit=$('#btnSubmit'),timerText=$('#timerText'),titleEl=$('#examTitle');
 
 /** State */
-let QUESTIONS=[];     // [{id,text,opts[],correct,topic, no?}]
+let QUESTIONS=[];
 let TOTAL=0;
 let idx=0;
-let answers=new Map(); // key: q.id -> {no,qid,qtext,chosen,chosenText,correctIndex,correctText,ok}
+let answers=new Map();
 let durationSec=30*60;
 let remaining=durationSec;
 let timer=null;
@@ -286,7 +403,6 @@ function renderQuestion(){
       <input type="radio" name="q${q.id}" ${checked?'checked':''}/>
     `;
     row.querySelector('input').addEventListener('change', ()=>{
-      // LƯU ĐỐI TƯỢNG ĐẦY ĐỦ (có text) – bảo đảm Results_DET có dữ liệu thật
       answers.set(q.id, {
         no: (q.no ?? (idx+1)),
         qid: q.id,
@@ -341,7 +457,6 @@ function startTimer(){
 
 /** Submit an toàn (ghi GAS + chuyển trang) */
 async function safeSubmit(auto=false){
-  // dựng chi tiết có TEXT đầy đủ
   const detail = QUESTIONS.map((q,i)=>{
     const a = answers.get(q.id) || {};
     const chosen = (typeof a.chosen==='number') ? a.chosen : -1;
@@ -363,7 +478,6 @@ async function safeSubmit(auto=false){
   const wrong    = detail.length - correct - skip;
   const spent    = Math.max(0, durationSec - remaining);
 
-  // payload gửi dạng form-url-encoded để tránh preflight
   const form = new URLSearchParams();
   form.set('action',   'submit');
   form.set('bankId',   BANK);
@@ -375,7 +489,6 @@ async function safeSubmit(auto=false){
   form.set('userAgent', navigator.userAgent);
   form.set('device', /Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop');
 
-  // nếu đã login qua AUTH và có info trong localStorage
   try{
     const u = JSON.parse(localStorage.getItem('ptkv3_user')||'{}');
     if(u.id)       form.set('userId',   u.id);
@@ -385,7 +498,11 @@ async function safeSubmit(auto=false){
   }catch(_){}
 
   form.set('answers', JSON.stringify(detail));
-  form.set('extra',   JSON.stringify({ mode: MODE, title: (CURRENT.title||'') }));
+  form.set('extra',   JSON.stringify({
+    mode:  MODE,
+    title: (CURRENT.title||''),
+    target: TARGET || ''           // 💡 ghi thêm đối tượng vào Siêu dữ liệu
+  }));
 
   try{
     const res  = await fetch(API_BASE, {
@@ -395,7 +512,6 @@ async function safeSubmit(auto=false){
       cache:'no-store'
     });
 
-    // Trường hợp web-app trả HTML (do quyền), parse JSON an toàn
     let dataText = await res.text();
     let data; try { data = JSON.parse(dataText) } catch { data = { ok:false, error:'Response is not JSON' } }
 
@@ -406,15 +522,25 @@ async function safeSubmit(auto=false){
     alert('Không thể ghi kết quả về hệ thống. Vui lòng thử lại.');
   }
 
-  // chuyển trang kết quả để không kẹt UX
-  const q = new URLSearchParams({ correct:String(correct), total:String(detail.length), time:fmtTime(spent), bank:BANK, mode:MODE });
+  const q = new URLSearchParams({
+    correct:String(correct),
+    total:String(detail.length),
+    time:fmtTime(spent),
+    bank:BANK,
+    mode:MODE
+  });
   location.href = `${RESULT_PAGE}?${q.toString()}`;
 }
 /* ===== LOAD QUESTIONS ===== */
 async function loadQuestions(){
   if(!BANK){ alert('Không xác định được mã kỳ thi (bankId).'); location.href='kiemtra.html'; return; }
 
-  const url = `${API_BASE}?action=questions&bank=${encodeURIComponent(BANK)}`;
+  // 💡 Gọi API kèm theo target để chọn đúng đề cho SQ/QNCN
+  let url = `${API_BASE}?action=questions&bank=${encodeURIComponent(BANK)}`;
+  if (TARGET){
+    url += `&target=${encodeURIComponent(TARGET)}`;
+  }
+
   try{
     const res  = await fetch(url, {cache:'no-store'});
     const data = await res.json();

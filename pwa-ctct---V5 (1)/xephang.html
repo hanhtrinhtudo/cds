@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PTKV3 • Bảng Xếp Hạng Huấn Luyện Chính Trị</title>
+<meta name="theme-color" content="#A41919" />
+<style>
+  :root{
+    --primary:#A41919;
+    --gold:#FFD966;
+    --bg:#fafafa;
+    --text:#111827;
+    --muted:#6b7280;
+    --ring:#e5e7eb;
+    --card:#ffffff;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Be Vietnam Pro",Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  a{color:inherit;text-decoration:none}
+  .container{max-width:1200px;margin:0 auto;padding:16px}
+  header.site{
+    position:sticky;top:0;z-index:30;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--ring);
+  }
+  .site-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800}
+  .brand .logo{width:28px;height:28px;border-radius:50%;background:var(--primary);position:relative;box-shadow:0 0 0 3px rgba(164,25,25,.1)}
+  .brand .logo:after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--gold)}
+  .site-nav{display:flex;gap:14px;font-weight:600}
+  .site-nav a{opacity:.85}
+  .site-nav a.active{color:var(--primary);opacity:1}
+  /* Hero */
+  .hero{
+    margin-top:12px;background:linear-gradient(135deg, rgba(164,25,25,.06), rgba(255,217,102,.10));
+    border:1px solid var(--ring);border-radius:var(--radius);padding:24px;
+  }
+  .hero h1{margin:0 0 6px 0;font-size:28px;letter-spacing:.2px}
+  .hero p{margin:0;color:var(--muted)}
+  /* Filter bar */
+  .filters{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--ring);border-radius:999px;background:#fff;cursor:pointer;font-weight:600}
+  .pill[aria-pressed="true"]{border-color:var(--primary);color:#fff;background:var(--primary)}
+  .spacer{flex:1 1 auto}
+  /* Layout main */
+  .grid{
+    display:grid;gap:16px;margin-top:16px;
+    grid-template-columns:1.4fr .6fr; /* main + aside */
+  }
+  /* Top 3 */
+  .top3{display:grid;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .card{background:var(--card);border:1px solid var(--ring);border-radius:var(--radius);padding:16px;box-shadow:0 6px 14px rgba(0,0,0,.03)}
+  .top-card{position:relative;overflow:hidden}
+  .medal{position:absolute;right:12px;top:12px;padding:4px 10px;border-radius:999px;background:#fff;border:1px solid var(--ring);font-weight:700}
+  .medal.gold{background:linear-gradient(180deg,#ffe8a6,#ffd34d);border:none}
+  .medal.silver{background:linear-gradient(180deg,#f2f4f7,#e5e7eb)}
+  .medal.bronze{background:linear-gradient(180deg,#f3d6b8,#e5b88c)}
+  .avatar{width:54px;height:54px;border-radius:50%;background:var(--primary);display:inline-block;box-shadow:0 0 0 3px rgba(164,25,25,.15)}
+  .top-name{margin-top:10px;font-weight:800}
+  .top-unit{color:var(--muted);font-size:13px}
+  .top-score{margin-top:8px;font-weight:700}
+  .progress{height:8px;background:#f1f5f9;border-radius:999px;overflow:hidden;margin-top:10px}
+  .progress>div{height:100%;background:var(--primary);width:0%}
+  /* Table */
+  .table-wrap{margin-top:16px}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--ring);border-radius:var(--radius);overflow:hidden}
+  thead th{background:#fafafa;color:#374151;font-weight:700;text-align:left;border-bottom:1px solid var(--ring);padding:12px}
+  tbody td{border-bottom:1px solid var(--ring);padding:12px;vertical-align:middle}
+  tbody tr:hover{background:#fcfcfd}
+  .rank{font-weight:800}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--ring);border-radius:999px;font-size:12px;background:#fff}
+  .mini{height:6px;background:#f1f5f9;border-radius:8px;overflow:hidden}
+  .mini>div{height:100%;background:var(--primary);width:0%}
+  /* Aside */
+  aside{display:flex;flex-direction:column;gap:16px}
+  .chart-box canvas{width:100%;height:180px}
+  .ai-box .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .ai-box .chips .chip{cursor:pointer}
+  .empty{padding:18px;border:1px dashed var(--ring);border-radius:var(--radius);text-align:center;color:var(--muted)}
+  /* Footer */
+  footer.site{margin-top:20px;border-top:1px solid var(--ring);padding:16px 0;color:var(--muted);font-size:14px}
+  /* Mobile */
+  @media (max-width: 1060px){
+    .grid{grid-template-columns:1fr}
+  }
+  @media (max-width: 720px){
+    .site-nav{display:none}
+    .hero h1{font-size:22px}
+    .top3{grid-template-columns:1fr}
+  }
+  /* Bottom nav (mobile) */
+  .bottom-nav{
+    position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--ring);
+    display:none;justify-content:space-around;gap:8px;padding:10px 8px;z-index:40
+  }
+  .bottom-nav a{font-weight:700;text-align:center}
+  .bottom-nav svg{display:block;margin:0 auto 2px auto}
+  @media (max-width: 720px){
+    .bottom-nav{display:flex}
+    body{padding-bottom:64px}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="container site-inner">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      PTKV3 • Bảng Xếp Hạng
+    </div>
+    <nav class="site-nav" aria-label="Điều hướng chính">
+      <a href="index.html">Trang chủ</a>
+      <a href="news.html">Tin tức</a>
+      <a href="materials.html">Học tập</a>
+      <a class="active" href="leaderboard.html" aria-current="page">Xếp hạng</a>
+      <a href="exam.html">Kiểm tra</a>
+      <a href="auth.html">Đăng nhập</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <!-- Hero -->
+  <section class="hero" aria-labelledby="hero-title">
+    <h1 id="hero-title">VINH DANH TẬP THỂ & CÁ NHÂN XUẤT SẮC</h1>
+    <p>Bảng xếp hạng huấn luyện chính trị — cập nhật theo thời gian thực.</p>
+    <div class="filters" role="toolbar" aria-label="Bộ lọc xếp hạng">
+      <button class="pill" data-period="tuan" aria-pressed="true">Tuần này</button>
+      <button class="pill" data-period="thang" aria-pressed="false">Tháng này</button>
+      <button class="pill" data-period="nam" aria-pressed="false">Năm nay</button>
+      <span class="spacer"></span>
+      <button class="pill" data-entity="ca-nhan" aria-pressed="true">Cá nhân</button>
+      <button class="pill" data-entity="don-vi" aria-pressed="false">Đơn vị</button>
+    </div>
+  </section>
+
+  <section class="grid" aria-label="Nội dung xếp hạng">
+    <!-- Main Column -->
+    <div>
+      <!-- Top 3 -->
+      <div class="top3" id="top3" aria-label="Top 3 vinh danh">
+        <!-- Cards render by JS -->
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap card" style="margin-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <strong>Bảng xếp hạng</strong>
+          <span class="chip" id="summaryChip">0 người • 0% hoàn thành TB</span>
+        </div>
+        <div id="tableEmpty" class="empty" hidden>Chưa có dữ liệu xếp hạng.</div>
+        <table id="lbTable" aria-label="Bảng xếp hạng" hidden>
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Họ tên / Đơn vị</th>
+              <th>Điểm</th>
+              <th>Hoàn thành</th>
+              <th style="width:140px">Tiến độ</th>
+            </tr>
+          </thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Aside -->
+    <aside>
+      <div class="card chart-box">
+        <strong>Thống kê điểm trung bình</strong>
+        <canvas id="scoreChart" aria-label="Biểu đồ điểm trung bình" role="img"></canvas>
+      </div>
+
+      <div class="card ai-box">
+        <strong>AI Insights</strong>
+        <p id="aiText" style="margin:.25rem 0;color:var(--muted)">AI nhận xét sẽ hiển thị khi có dữ liệu thực.</p>
+        <div class="chips">
+          <span class="chip" data-ai="chu-de">Chủ đề học nhiều</span>
+          <span class="chip" data-ai="yeu-diem">Nhóm yếu điểm</span>
+          <span class="chip" data-ai="de-xuat">Đề xuất ôn tập</span>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="container">
+    © PTKV3 – Trung tâm Giáo dục Chính trị Số • <a href="#">Liên hệ</a> • <a href="#">Hướng dẫn</a>
+  </div>
+</footer>
+
+<!-- Bottom navigation (mobile) -->
+<nav class="bottom-nav" aria-label="Điều hướng chân trang">
+  <a href="index.html" aria-label="Trang chủ">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 10L12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10z" fill="currentColor"/></svg>
+    Trang chủ
+  </a>
+  <a href="materials.html" aria-label="Học tập">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v12H4z" stroke="currentColor" stroke-width="2"/><path d="M4 9h16" stroke="currentColor" stroke-width="2"/></svg>
+    Học tập
+  </a>
+  <a href="exam.html" aria-label="Thi">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 4h10v16H7z" stroke="currentColor" stroke-width="2"/><path d="M9 8h6M9 12h6M9 16h6" stroke="currentColor" stroke-width="2"/></svg>
+    Thi
+  </a>
+  <a href="leaderboard.html" class="active" aria-current="page" aria-label="Xếp hạng">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 14h4v6H4zM10 10h4v10h-4zM16 6h4v14h-4z" fill="currentColor"/></svg>
+    Xếp hạng
+  </a>
+  <a href="auth.html" aria-label="Tôi">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="2"/></svg>
+    Tôi
+  </a>
+</nav>
+
+<script>
+/** ================== CẤU HÌNH BACKEND ================== */
+window.PTKV3_API = window.PTKV3_API || ''; // <- ĐIỀN URL Web App thực tế trước khi dùng
+
+/** ================== TIỆN ÍCH UI ================== */
+const $ = (s, r=document)=> r.querySelector(s);
+const $$ = (s, r=document)=> Array.from(r.querySelectorAll(s));
+function setPressed(btns, attr, value){
+  btns.forEach(b=> b.setAttribute('aria-pressed', String(b.getAttribute(attr)===value)));
+}
+function empty(node, msg){
+  node.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'empty'; div.textContent = msg;
+  node.append(div);
+}
+
+/** ================== GỌI API ================== */
+async function apiCall(action, payload={}){
+  if(!window.PTKV3_API){ throw new Error('Chưa cấu hình window.PTKV3_API'); }
+  const res = await fetch(window.PTKV3_API, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action, payload })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Lỗi không xác định');
+  return json.data || {};
+}
+
+/** ================== VẼ BIỂU ĐỒ ================== */
+function drawBars(canvas, values){
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height = 180;
+  ctx.clearRect(0,0,w,h);
+  const pad = 18;
+  const max = Math.max(1, ...values);
+  const bw = (w - pad*2) / values.length * 0.6;
+  values.forEach((v,i)=>{
+    const x = pad + i * ((w - pad*2) / values.length) + ( ((w - pad*2)/values.length) - bw )/2;
+    const y = h - pad - (v/max)*(h - pad*2);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+    ctx.fillRect(x, y, bw, h - pad - y);
+  });
+}
+
+/** ================== BỐ TRÍ & KẾT XUẤT ================== */
+function renderTop3(list){
+  const box = $('#top3'); box.innerHTML = '';
+  const top = list.slice(0,3);
+  const medals = ['gold','silver','bronze'];
+  top.forEach((r, i)=>{
+    const card = document.createElement('div');
+    card.className = 'card top-card';
+    card.innerHTML = `
+      <span class="medal ${medals[i]}">#${i+1}</span>
+      <span class="avatar" aria-hidden="true"></span>
+      <div class="top-name">${escapeHtml(r.ten || r['ma'] || '—')}</div>
+      <div class="top-unit">${escapeHtml(r.donvi || r['doi-tuong'] || '')}</div>
+      <div class="top-score">Điểm: ${fmtScore(r.diem)}</div>
+      <div class="progress"><div style="width:${Number(r.hoan_thanh||r['hoan-thanh']||0)}%"></div></div>
+    `;
+    box.append(card);
+  });
+  if(!top.length){ empty(box,'Chưa có dữ liệu Top 3.'); }
+}
+
+function renderTable(list, entity){
+  const tbody = $('#lbBody'); tbody.innerHTML = '';
+  const table = $('#lbTable'); const emptyEl = $('#tableEmpty');
+  if(!list.length){ table.hidden = true; emptyEl.hidden = false; return; }
+  table.hidden = false; emptyEl.hidden = true;
+
+  list.forEach((r, idx)=>{
+    const tr = document.createElement('tr');
+    const name = escapeHtml(r.ten || r['ma'] || '—');
+    const unit = escapeHtml(r.donvi || r['doi-tuong'] || '');
+    const done = Number(r.hoan_thanh||r['hoan-thanh']||0);
+    tr.innerHTML = `
+      <td class="rank">#${idx+1}</td>
+      <td>
+        <div style="font-weight:700">${name}</div>
+        <div style="color:var(--muted);font-size:12px">${entity==='don-vi' ? 'Đơn vị' : 'Đơn vị'}: ${unit || '—'}</div>
+      </td>
+      <td>${fmtScore(r.diem)}</td>
+      <td>${done}%</td>
+      <td>
+        <div class="mini"><div style="width:${done}%"></div></div>
+      </td>
+    `;
+    tbody.append(tr);
+  });
+
+  // Summary chip
+  const avg = Math.round(list.reduce((a,b)=> a + (Number(b.hoan_thanh||b['hoan-thanh']||0)), 0) / list.length);
+  $('#summaryChip').textContent = `${list.length} ${entity==='don-vi'?'đơn vị':'người'} • ${isFinite(avg)?avg:0}% hoàn thành TB`;
+}
+
+function fmtScore(v){
+  if(v==null||v==='') return '—';
+  const n = Number(v);
+  if(isNaN(n)) return String(v);
+  return n.toFixed(2).replace(/\.00$/,'');
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
+
+/** ================== TẢI DỮ LIỆU ================== */
+async function loadLeaderboard(){
+  const periodBtn = $$('.pill[data-period]').find(b=> b.getAttribute('aria-pressed')==='true');
+  const entityBtn = $$('.pill[data-entity]').find(b=> b.getAttribute('aria-pressed')==='true');
+  const period = periodBtn ? periodBtn.dataset.period : 'tuan';
+  const entity = entityBtn ? entityBtn.dataset.entity : 'ca-nhan';
+
+  try{
+    const data = await apiCall('xep-hang.xem', { 'chu-ky':period, 'doi-tuong': entity==='don-vi'?'đơn vị':'cá nhân' });
+    const items = (data.items||[]).map(x=>{
+      return {
+        ten: x.ten || x['ma'] || x['Mã/Đơn vị'] || x['ma'],
+        donvi: x.donvi || x['Đơn vị'] || x['doi-tuong'] || '',
+        diem: x.diem ?? x['diem'],
+        hoan_thanh: x.hoan_thanh ?? x['hoan-thanh'] ?? x['Hoàn thành'] ?? 0
+      };
+    });
+    renderTop3(items);
+    renderTable(items, entity);
+
+    // Chart: lấy 10 điểm đầu làm minh họa phân phối (không demo — nếu ít dữ liệu sẽ vẽ tương ứng)
+    const vals = items.slice(0,10).map(it=> Number(it.diem||0));
+    drawBars($('#scoreChart'), vals.length? vals : [0,0,0,0,0]);
+
+    // AI insights: nếu có items → hiển thị gợi ý chung (không dùng dữ liệu giả)
+    $('#aiText').textContent = items.length
+      ? 'AI nhận xét: Hãy động viên Top 3 và hỗ trợ nhóm có tỷ lệ hoàn thành thấp.'
+      : 'Chưa có dữ liệu để AI đưa nhận xét.';
+  }catch(err){
+    console.error(err);
+    renderTop3([]);
+    $('#lbTable').hidden = true; $('#tableEmpty').hidden = false;
+    $('#aiText').textContent = 'Không thể tải dữ liệu. Vui lòng kiểm tra endpoint.';
+    drawBars($('#scoreChart'), [0,0,0,0,0]);
+  }
+}
+
+/** ================== SỰ KIỆN UI ================== */
+document.addEventListener('click', (e)=>{
+  const p = e.target.closest('.pill');
+  if(!p) return;
+  if(p.dataset.period){
+    setPressed($$('.pill[data-period]'), 'data-period', p.dataset.period);
+  }
+  if(p.dataset.entity){
+    setPressed($$('.pill[data-entity]'), 'data-entity', p.dataset.entity);
+  }
+  loadLeaderboard();
+});
+$$('.ai-box .chip').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    const kind = ch.dataset.ai;
+    const map = {
+      'chu-de': 'AI: Chủ đề học nhiều tuần này là “Tư tưởng Hồ Chí Minh”.',
+      'yeu-diem': 'AI: Nên bồi dưỡng nhóm “Luật quốc phòng” cho đối tượng mới.',
+      'de-xuat': 'AI: Đề xuất mở lớp ôn tập chuyên đề “Đường lối Quốc phòng 2025”.'
+    };
+    $('#aiText').textContent = map[kind] || 'AI: Đang phân tích...';
+  });
+});
+
+/** ================== KHỞI TẠO ================== */
+window.addEventListener('DOMContentLoaded', ()=>{
+  // Gợi ý: set window.PTKV3_API tại đây trước khi gọi loadLeaderboard
+  // window.PTKV3_API = 'https://script.google.com/macros/s/XXXX/exec';
+  loadLeaderboard();
+});
+</script>
+</body>
+</html>

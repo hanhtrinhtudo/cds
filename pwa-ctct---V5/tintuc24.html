@@ -256,6 +256,42 @@ a{color:inherit;text-decoration:none} a:hover{color:#dc2626}
   /* Xoay caret khi phần cha đang mở */
   .m-drop[aria-expanded="true"] .caret{ transform: rotate(180deg); }
 }
+/* ==== TRA CỨU VĂN BẢN CHÍNH SÁCH ==== */
+.section-search{
+  display:flex;
+  gap:8px;
+  margin-bottom:14px;
+  flex-wrap:wrap;
+}
+.section-search input{
+  flex:1;
+  min-width:220px;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  font-size:14px;
+}
+.section-search select,
+.section-search button{
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-size:14px;
+}
+.section-search button{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent-dark);
+  cursor:pointer;
+  white-space:nowrap;
+}
+.section-search button:hover{
+  background:var(--accent-dark);
+}
+#doc-results .muted{
+  padding:6px 0;
+}
 
 </style>
 </head>
@@ -333,6 +369,30 @@ a{color:inherit;text-decoration:none} a:hover{color:#dc2626}
       </aside>
     </div>
   </section>
+  <!-- 2.5) TRA CỨU VĂN BẢN CHÍNH SÁCH -->
+  <section class="section" id="doc-search">
+    <h2>🔎 TRA CỨU VĂN BẢN CHÍNH SÁCH</h2>
+    <form id="doc-search-form" class="section-search" onsubmit="return doDocSearch(event)">
+      <input id="doc-q" type="search"
+             placeholder="Nhập số / tên văn bản (vd: 24/2024/NĐ-CP, phụ cấp khu vực, nhà ở, tiền lương...)"/>
+      <select id="doc-type">
+        <option value="all">Tất cả loại văn bản</option>
+        <option value="NGHI_DINH">Nghị định</option>
+        <option value="THONG_TU">Thông tư</option>
+        <option value="QUYET_DINH">Quyết định</option>
+        <option value="CONG_VAN">Công văn</option>
+      </select>
+      <select id="doc-range">
+        <option value="all">Tất cả thời gian</option>
+        <option value="month">30 ngày qua</option>
+        <option value="year">12 tháng qua</option>
+      </select>
+      <button type="submit">Tìm kiếm</button>
+    </form>
+
+    <!-- Reuse layout 2 cột của policy-list -->
+    <div id="doc-results" class="policy-list"></div>
+  </section>
 
   <!-- 3) CHÍNH SÁCH MỚI -->
   <section class="section" id="policy">
@@ -378,7 +438,7 @@ a{color:inherit;text-decoration:none} a:hover{color:#dc2626}
 <script src="js/navbar.js" defer></script>
 <script>
 /* ====== CONFIG ====== */
-const API_BASE = 'https://script.google.com/macros/s/AKfycby0KuUYLsVLMVjk0XXMzE4j44XixzhXSp_YWKme15CzNYSUsTO5MUoIv5FdCxWM1KvSOQ/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbxt8a_A96KVbNIoqU0e1nBu5nv4ggbcFfvahsAH1ER8EbxnHgEMrlmAFMfQvsr8FWILdg/exec';
 const FALLBACK = 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?q=80&w=1200&auto=format&fit=crop';
 
 function jsonp(url){
@@ -589,6 +649,78 @@ function classForSummary(text){
     if(a) close();
   });
 })();
+/* ===== TRA CỨU VĂN BẢN CHÍNH SÁCH ===== */
+
+async function searchDocs(q, type = 'all', range = 'all') {
+  // Xử lý khoảng thời gian → từ (from)
+  let from = '';
+  const now = new Date();
+
+  if (range === 'month') {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - 1);
+    from = d.toISOString().slice(0, 10);
+  } else if (range === 'year') {
+    const d = new Date(now);
+    d.setFullYear(d.getFullYear() - 1);
+    from = d.toISOString().slice(0, 10);
+  }
+
+  const params = new URLSearchParams({
+    action: 'searchDocs',
+    q,
+    type,
+    range,        // backend vẫn nhận range để lọc today/week/month/year
+    from,         // tuỳ anh có dùng hay không (đã code bên trên thì bỏ cũng được)
+    limit: '50'
+  });
+
+  const data = await jsonp(`${API_BASE}?${params.toString()}`);
+  return data.items || [];
+}
+
+async function doDocSearch(ev){
+  ev.preventDefault();
+  const q     = document.getElementById('doc-q').value.trim();
+  const type  = document.getElementById('doc-type').value;
+  const range = document.getElementById('doc-range').value;
+  const box   = document.getElementById('doc-results');
+
+  if (!q) return;
+
+  box.innerHTML = '<div class="muted">Đang tìm kiếm, vui lòng chờ…</div>';
+
+  try{
+    const items = await searchDocs(q, type, range);
+    if (!items.length){
+      box.innerHTML = '<div class="muted">Không tìm thấy văn bản phù hợp. Anh thử đổi từ khóa, loại văn bản hoặc khoảng thời gian.</div>';
+      return;
+    }
+
+    box.innerHTML = items.map(it => `
+      <article class="pl-item card">
+        <a href="${it.link || '#'}" target="_blank" rel="noopener">
+          <img src="${it.image || FALLBACK}" onerror="this.src='${FALLBACK}'" alt="">
+        </a>
+        <div>
+          <h4 class="clamp-2">
+            <a href="${it.link || '#'}" target="_blank" rel="noopener">
+              ${it.so ? '[' + it.so + '] ' : ''}${it.title || ''}
+            </a>
+          </h4>
+          ${it.summary ? `<div class="desc clamp-3">${it.summary}</div>` : ''}
+          <div class="muted" style="margin-top:6px;font-size:13px">
+            ${it.loai || ''} • ${it.coquan || ''} • ${it.date || ''}
+          </div>
+          ${it.pdf ? `<div style="margin-top:4px"><a href="${it.pdf}" target="_blank" rel="noopener">📎 Tải bản PDF</a></div>` : ''}
+        </div>
+      </article>
+    `).join('');
+  }catch(e){
+    console.error(e);
+    box.innerHTML = '<div class="muted">Có lỗi khi tìm kiếm. Anh thử lại sau ít phút.</div>';
+  }
+}
 
 </script>
 </body>

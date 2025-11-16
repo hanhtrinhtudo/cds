@@ -19,10 +19,10 @@ a{color:inherit;text-decoration:none}
 /* Top bar */
 .header{position:sticky;top:0;z-index:50; font-weight: 600;  background: var(--topbar-grad); border-bottom: 2px solid #FFD74B;}
 .nav{  max-width:1200px; margin:auto;
-  height:56px;                         /* đồng bộ chiều cao */
-  padding:0px 16px;                       /* giãn cách ngang */
-  display:flex; align-items:center; gap:18px;  /* khoảng cách item */
-  font-size:16px; line-height:1;        /* cỡ chữ & line-height như trang Học tập */
+  height:56px;
+  padding:0px 16px;
+  display:flex; align-items:center; gap:18px;
+  font-size:16px; line-height:1;
   font-weight:600;}
 .nav a:hover{color:var(--gold); transform:scale(1.06);}
 .brand{font-weight:800; letter-spacing:0.2px}
@@ -50,7 +50,6 @@ a{color:inherit;text-decoration:none}
 .page{
   background:
     linear-gradient(90deg, var(--red-a) 0%, var(--red-b) 45%, var(--red-c) 100%),
-    /* hai radial nhẹ để tạo chiều sâu – cùng hướng, không đảo */
     radial-gradient(900px 420px at 12% 15%, rgba(255,255,255,.06) 0%, transparent 70%),
     radial-gradient(900px 420px at 88% 25%, rgba(0,0,0,.12) 0%, transparent 65%);
   min-height:100svh;
@@ -74,7 +73,7 @@ body.bg-red{
 
 /* ===== CARD ===== */
 .card{
-      background:#fffaf0; /* 🌼 Nền sáng ngà kem, nổi trên nền đỏ */
+  background:#fffaf0;
   border:3px solid #FFD74B;
   box-shadow:0 0 12px rgba(255,215,75,.35);
   border-radius:14px;
@@ -93,33 +92,42 @@ body.bg-red{
   display:inline-block; white-space:nowrap;
   margin-left:8px; padding:2px 10px; border-radius:999px;
   font-weight:600; font-size:12px;
-  background:#C62828;           /* nền đỏ */
-  color:#FFD966;                 /* chữ vàng */
-  border:1px solid #FFD74B;     /* viền vàng nhạt */
+  background:#C62828;
+  color:#FFD966;
+  border:1px solid #FFD74B;
   box-shadow:0 0 6px rgba(255,215,75,.35);
 }
 
 /* Buttons – đồng bộ, ring mảnh, căn giữa & thẳng hàng */
-.actions{margin-top:16px;display:flex;justify-content:center;}
+.actions{
+  margin-top:16px;
+  display:flex;
+  justify-content:center;
+  gap:8px;
+}
+.actions-multi{
+  flex-direction:column;
+  align-items:center;
+}
 .btn{
-  min-width: 180px;     /* đồng đều kích thước */
-  padding: 8px 14px;    /* giảm chiều cao */
-  font-size: 14px; font-size: 16px;
+  min-width: 180px;
+  padding: 8px 14px;
+  font-size: 16px;
   font-weight: 700;
   border-radius: 8px;
   text-transform: uppercase;
-  border: 2px solid #FFD74B;  /* viền vàng */
-  background: #C62828;        /* đỏ sáng */
+  border: 2px solid #FFD74B;
+  background: #C62828;
   color: #fff;
   box-shadow: 0 0 6px rgba(255,215,75,.4);
   transition: all .2s ease;
 }
 .btn:active{transform:translateY(1px)}
 .btn-primary, .btn-ghost{
-  background:#C62828;              /* đỏ sáng hơn */
+  background:#C62828;
   color:#fff;
-  border:2px solid #FFD74B;        /* viền vàng */
-  box-shadow:0 0 8px rgba(255,215,75,.5); /* ánh sáng vàng quanh nút */
+  border:2px solid #FFD74B;
+  box-shadow:0 0 8px rgba(255,215,75,.5);
 }
 .btn-primary:hover, .btn-ghost:hover{
   filter:brightness(1.1);
@@ -130,28 +138,24 @@ body.bg-red{
 
 /* === FIX MOBILE: thu gọn khoảng trống giữa HERO và GRID === */
 @media (max-width: 768px){
-  /* Chặn mọi min-height/padding vô tình từ stylesheet khác */
   .hero{
     min-height: unset !important;
     padding-top: 12px !important;
-    padding-bottom: 4px !important;  /* bớt đáy */
+    padding-bottom: 4px !important;
     margin-bottom: 0 !important;
   }
   .hero h1{ margin: 4px 0 6px !important; font-size: 26px; line-height: 1.15; }
   .hero p { margin: 0 !important; }
 
-  /* Ép phần lưới dính sát hero hơn */
   .hero + .grid{
-    margin-top: 8px !important;      /* trước là 22px -> 8px */
+    margin-top: 8px !important;
     padding-top: 0 !important;
   }
 
-  /* Tránh “đội khoảng” do collapse margin trong grid */
   .grid{ display:block; }
 
-  /* Card gọn chiều cao để hiện sớm hơn trong viewport */
   .card{
-    height: auto;                     /* bỏ fixed 260px trên mobile */
+    height: auto;
     padding: 14px 14px 12px;
   }
   .card .actions{ margin-top: 12px; }
@@ -160,20 +164,18 @@ body.bg-red{
 /* === MOBILE: thêm khoảng cách giữa các ô kỳ thi === */
 @media (max-width: 768px){
   .grid{
-    display: grid !important;      /* trả lại grid để dùng gap */
-    grid-template-columns: 1fr;    /* 1 cột */
-    row-gap: 16px;                 /* khoảng cách dọc giữa các card */
+    display: grid !important;
+    grid-template-columns: 1fr;
+    row-gap: 16px;
     column-gap: 0;
     margin-top: 10px !important;
   }
   .card{
     height: auto;
     padding: 14px 14px 12px;
-    margin: 0;                     /* bỏ mọi margin chen ngang */
+    margin: 0;
   }
 }
-
-
 </style>
 </head>
 <body>
@@ -212,7 +214,7 @@ body.bg-red{
       <a class="d-item" href="tintuc24.html">Tin tức</a>
       <a class="d-item" href="Hoctap.html">Học tập</a>
       <a class="d-item" href="kiemtra.html" aria-current="page" style="background:rgba(255,255,255,.16);border-left:3px solid var(--gold);font-weight:800">Làm bài kiểm tra</a>
-      </nav>
+    </nav>
   </div>
   <div id="backdrop" class="backdrop"></div>
 </header>
@@ -224,7 +226,7 @@ body.bg-red{
     <p>Đánh giá nhận thức – Kiểm tra kết quả huấn luyện</p>
   </section>
 
-    <section class="grid" id="exam-grid">
+  <section class="grid" id="exam-grid">
     <!-- Fallback khi đang tải -->
     <article class="card" id="loading-card">
       <header class="row" style="align-items:flex-start">
@@ -246,9 +248,11 @@ window.PTKV3_CFG = {
   SUBMIT_URL:  "",
   USE_QUEUE:   true
 };
+
 (function(){
   const KEYS = { CURRENT:"ptkv3:exam:current" };
   function save(k,v){ try{ sessionStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
   window.PTKV3 = window.PTKV3 || {};
   window.PTKV3.startExam = function(meta){
     const cfg = {
@@ -258,10 +262,13 @@ window.PTKV3_CFG = {
       total: Number(meta.total || 0),
       durationSec: Number(meta.durationSec || 0) || null,
       startedAt: Date.now(),
-      user: meta.user || null
+      user: meta.user || null,
+      target: meta.target || ""   // 🔹 Đối tượng: SQ / QNCN / CBQNCN...
     };
     save(KEYS.CURRENT, cfg);
+
     const p = new URLSearchParams({ bank: cfg.bankId, mode: cfg.mode });
+    if (cfg.target) p.set('target', cfg.target);   // gửi kèm sang lambai.html
     location.href = window.PTKV3_CFG.EXAM_PAGE + "?" + p.toString();
   };
 })();
@@ -269,49 +276,47 @@ window.PTKV3_CFG = {
 
 <!-- ====== Render động từ Apps Script: listBanks ====== -->
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbxLc27Q0wjn8fReUd0VGVva63-tihSoEbYAyP2g__uPYTww8QA-fheaKQ0iK43iEao_/exec'; // TODO: thay DEPLOYMENT_ID
+const API = 'https://script.google.com/macros/s/AKfycbwgpyEWzRG-wpqFSrYVzWiklxda-DY68LN-FHAw1rnd1rON5MBegLfx7gtFOWbUFtteYg/exec';
 const grid = document.getElementById('exam-grid');
 
-// Thay vì new Date(), dùng chuỗi local từ API (đã format sẵn)
 function fmtLocal(s){ return s && String(s).trim() ? s : '—'; }
 
+function escapeHTML(s){
+  return String(s||'').replace(/[&<>"']/g,c=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"
+  }[c]));
+}
+
+function mmss(sec){
+  sec = Number(sec||0);
+  const m = Math.floor(sec/60), s = sec%60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+/* Gán handler cho nút bắt đầu, có cả target */
 function attachStartHandlers(scope){
   scope.querySelectorAll('button[data-bank]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      if(btn.disabled) return;
+      if(btn.classList.contains('is-disabled') || btn.disabled) return;
       PTKV3.startExam({
         bankId: btn.dataset.bank,
         title: btn.dataset.title,
         total: Number(btn.dataset.total||0),
         durationSec: Number(btn.dataset.duration||0) || null,
-        mode: btn.dataset.mode || 'exam'
+        mode: btn.dataset.mode || 'exam',
+        target: btn.dataset.target || ''   // 🔹 mang theo đối tượng
       });
     });
   });
 }
 
-function escapeHTML(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]));}
-function mmss(sec){ sec=Number(sec||0); const m=Math.floor(sec/60), s=sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
-
-/* Gán handler cho nút bắt đầu */
-function attachStartHandlers(scope){
-  scope.querySelectorAll('button[data-bank]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      if(btn.classList.contains('is-disabled')) return;
-      PTKV3.startExam({
-        bankId: btn.dataset.bank,
-        title: btn.dataset.title,
-        total: Number(btn.dataset.total||0),
-        durationSec: Number(btn.dataset.duration||0) || null,
-        mode: btn.dataset.mode || 'exam'
-      });
-    });
-  });
-}
-
-/* Render danh sách banks – DÙNG startAtLocal/endAtLocal và questionCount */
+/* Render danh sách banks
+   - Nếu bank.targets.length > 1 -> tách thành nhiều card (SQ, QNCN...)
+   - Nếu không có hoặc chỉ 1 target -> 1 card như bình thường
+*/
 function renderBanks(banks){
   grid.innerHTML = '';
+
   if(!banks.length){
     const card = document.createElement('article');
     card.className = 'card';
@@ -319,22 +324,67 @@ function renderBanks(banks){
       <header class="row" style="align-items:flex-start">
         <h2 class="card__title">Chưa có kỳ kiểm tra</h2>
       </header>
-      <div class="meta">Kiểm tra bảng <strong>Banks</strong> trong Google Sheet hoặc thời gian mở kỳ thi.</div>
+      <div class="meta">
+        <div class="row"><span class="icon">ℹ️</span>
+          <span>Kiểm tra bảng <strong>Banks</strong> trong Google Sheet hoặc thời gian mở kỳ thi.</span>
+        </div>
+      </div>
       <div class="actions"><button class="btn" disabled>—</button></div>`;
     grid.appendChild(card);
     return;
   }
 
   banks.forEach(b=>{
-    const total = b.totalOverride || b.questionCount || '—';
     const status = b.status || 'open';
+    const badge = (status === 'open')
+      ? ''
+      : `<span class="status-badge">${status==='upcoming'?'SẮP MỞ':'ĐÃ KẾT THÚC'}</span>`;
 
-    const badge = (b.status==='open')
-    ? ''
-    : `<span class="status-badge">${b.status==='upcoming'?'SẮP MỞ':'ĐÃ KẾT THÚC'}</span>`;
+    const targets = Array.isArray(b.targets) ? b.targets : [];
 
+    /* ===== Trường hợp có nhiều đối tượng (ví dụ: Sĩ quan + QNCN) ===== */
+    if (targets.length > 1){
+      targets.forEach(t=>{
+        const total   = t.questionCount || b.totalOverride || b.questionCount || '—';
+        const tLabel  = t.label || 'Đối tượng';
+        const tKey    = t.key   || '';     // SQ / QNCN
+        const disabled = status !== 'open';
 
-    const btnDisabled = status!=='open';
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <header class="row" style="align-items:flex-start">
+            <h2 class="card__title">${escapeHTML(b.title)}</h2>${badge}
+          </header>
+          <div class="meta">
+            <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(tLabel)}</strong></span></div>
+            <div class="row"><span class="icon">📅</span><span>Bắt đầu: ${fmtLocal(b.startAtLocal)}</span></div>
+            <div class="row"><span class="icon">⏰</span><span>Kết thúc: ${fmtLocal(b.endAtLocal)}</span></div>
+            <div class="row"><span class="icon">📝</span><span>${total} câu hỏi</span></div>
+          </div>
+          <div class="actions">
+            <button class="btn ${disabled?'is-disabled':''}"
+              ${disabled?'disabled':''}
+              data-bank="${b.bankId}"
+              data-title="${escapeHTML(b.title)}"
+              data-total="${total || 0}"
+              data-duration="${b.durationSec||''}"
+              data-mode="${b.mode||'exam'}"
+              data-target="${tKey}">
+              ${b.mode==='mock'?'BẮT ĐẦU THI':'BẮT ĐẦU KIỂM TRA'}
+            </button>
+          </div>`;
+        grid.appendChild(card);
+      });
+      return; // sang bank tiếp theo
+    }
+
+    /* ===== Trường hợp chỉ 1 đối tượng (hoặc không cấu hình targets) ===== */
+    const t = targets[0] || null;
+    const total = b.totalOverride || (t ? t.questionCount : null) || b.questionCount || '—';
+    const targetLabel = t ? t.label : (b.targetLabel || 'Cán bộ, QNCN');
+    const targetKey   = t ? t.key   : (b.targetKey   || '');
+    const disabled    = status !== 'open';
 
     const card = document.createElement('article');
     card.className = 'card';
@@ -343,18 +393,20 @@ function renderBanks(banks){
         <h2 class="card__title">${escapeHTML(b.title)}</h2>${badge}
       </header>
       <div class="meta">
+        <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(targetLabel)}</strong></span></div>
         <div class="row"><span class="icon">📅</span><span>Bắt đầu: ${fmtLocal(b.startAtLocal)}</span></div>
         <div class="row"><span class="icon">⏰</span><span>Kết thúc: ${fmtLocal(b.endAtLocal)}</span></div>
-        <div class="row"><span class="icon">📝</span><span>${(b.totalOverride||b.questionCount||'—')} câu hỏi</span></div>
+        <div class="row"><span class="icon">📝</span><span>${total} câu hỏi</span></div>
       </div>
       <div class="actions">
-        <button class="btn ${btnDisabled?'is-disabled':''}"
-          ${btnDisabled?'disabled':''}
+        <button class="btn ${disabled?'is-disabled':''}"
+          ${disabled?'disabled':''}
           data-bank="${b.bankId}"
           data-title="${escapeHTML(b.title)}"
           data-total="${total || 0}"
           data-duration="${b.durationSec||''}"
-          data-mode="${b.mode||'exam'}">
+          data-mode="${b.mode||'exam'}"
+          data-target="${targetKey}">
           ${b.mode==='mock'?'BẮT ĐẦU THI':'BẮT ĐẦU KIỂM TRA'}
         </button>
       </div>`;
@@ -364,7 +416,7 @@ function renderBanks(banks){
   attachStartHandlers(grid);
 }
 
-/* Load banks + thông báo lỗi “chuyên nghiệp” */
+/* Load banks */
 async function loadBanks(){
   try{
     const res = await fetch(`${API}?action=listBanks`, {cache:'no-store'});

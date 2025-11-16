@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PTKV3 • Bảng xếp hạng</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{ --ink:#0f172a; --muted:#64748b; --brand:#A41919; --gold:#FFD966; }
+body{ margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; background:#fff8ea; color:var(--ink); }
+.wrap{ max-width:1100px; margin:28px auto; padding:0 16px; }
+h1{ margin:0 0 14px; font-size:28px; font-weight:800 }
+.sub{ color:var(--muted); margin:0 0 16px }
+.tabs{ display:flex; gap:8px; margin:10px 0 18px }
+.tab{ border:2px solid #e2e8f0; background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700 }
+.tab.active{ border-color:#c2410c; background:#ffedd5 }
+.ctrls{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 14px }
+input,select,button{ padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; font-family:inherit }
+button.primary{ background:linear-gradient(180deg,#E35A2A,#A41919); color:#fff; border:none; font-weight:800 }
+.table{ width:100%; border-collapse:separate; border-spacing:0 8px; }
+.table th{ text-align:left; font-size:13px; color:#475569; padding:0 10px }
+.row{ background:#fff; box-shadow:0 6px 16px rgba(0,0,0,.06); border:1px solid #f1d8a5; border-radius:12px; }
+.row td{ padding:12px 10px; }
+.rank{ width:64px; font-weight:900; text-align:center }
+.badge{ display:inline-block; padding:4px 8px; border-radius:999px; background:#fffbeb; border:1px solid #fde68a; font-weight:800 }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bảng xếp hạng</h1>
+  <p class="sub" id="subtitle">—</p>
+
+  <div class="tabs">
+    <button class="tab active" data-scope="user">Cá nhân</button>
+    <button class="tab" data-scope="unit">Đơn vị</button>
+  </div>
+
+  <div class="ctrls">
+    <input id="bank" placeholder="Nhập bankId (vd: CTDT-2025)" />
+    <select id="bestOf">
+      <option value="best" selected>Điểm cao nhất</option>
+      <option value="latest">Lần nộp gần nhất</option>
+    </select>
+    <input id="limit" type="number" min="1" max="500" value="50" style="width:100px" />
+    <button class="primary" id="btnLoad">Tải BXH</button>
+  </div>
+
+  <table class="table" id="tbl">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<!-- Guard: chỉ-cần-đăng-nhập, không yêu cầu role -->
+<script src="js/auth-guard.js" data-require-login="true" defer></script>
+<!-- Config toàn cục: nên khai báo window.PTKV3_API trong js/config.js -->
+<script src="js/config.js"></script>
+
+<script>
+// ======== Cấu hình API + Phiên đăng nhập dùng chung ========
+const API_BASE =
+  (window.PTKV3_API) ||            // Chuẩn PTKV3 (khuyến nghị)
+  (window.SHEET_API)  ||           // Dự án cũ (fallback)
+  'https://script.google.com/macros/s/AKfycbxLc27Q0wjn8fReUd0VGVva63-tihSoEbYAyP2g__uPYTww8QA-fheaKQ0iK43iEao_/exec'; // Cuối cùng
+
+function getSession(){
+  try{ return JSON.parse(localStorage.getItem('PTKV3_SESSION')||'null') }catch(_){ return null }
+}
+function authHeaders(){
+  const ses=getSession();
+  return ses?.token ? { 'Authorization':'Bearer '+ses.token } : {};
+}
+const $ = (s,r=document)=>r.querySelector(s);
+
+// ======== UI hành vi ========
+const scopeTabs = document.querySelectorAll('.tab');
+let scope='user';
+
+scopeTabs.forEach(t=> t.addEventListener('click', ()=>{
+  scopeTabs.forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  scope = t.dataset.scope || 'user';
+  loadLB();
+}));
+
+$('#btnLoad').addEventListener('click', loadLB);
+
+// ======== Render helpers ========
+function fmtTime(sec){ sec=Number(sec||0); const m=String(Math.floor(sec/60)).padStart(2,'0'); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+function escapeHTML(s){ return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c])); }
+
+// ======== Tải BXH ========
+async function loadLB(){
+  const bank = $('#bank').value.trim();
+  const bestOf = $('#bestOf').value;
+  const limit = Math.max(1, Math.min(500, Number($('#limit').value||50)));
+
+  const url = new URL(API_BASE);
+  url.searchParams.set('action','leaderboard');
+  url.searchParams.set('scope', scope);
+  if(bank) url.searchParams.set('bank', bank);
+  url.searchParams.set('bestOf', bestOf);
+  url.searchParams.set('limit', String(limit));
+
+  $('#subtitle').textContent = 'Đang tải…';
+  $('#thead').innerHTML = ''; $('#tbody').innerHTML = '';
+
+  try{
+    const res = await fetch(url.toString(), { headers: authHeaders(), cache:'no-store' });
+    const j = await res.json();
+
+    const title = j.bankTitle ? `${j.bankTitle} (${j.bank || '—'})` : (j.bank || 'Tất cả kỳ thi');
+    $('#subtitle').textContent = `Phạm vi: ${scope==='user'?'Cá nhân':'Đơn vị'} • Kỳ thi: ${title} • Xếp theo: ${j.bestOf==='latest'?'Lần nộp gần nhất':'Điểm cao nhất'}`;
+
+    if(scope==='user'){
+      $('#thead').innerHTML = `<tr><th>#</th><th>Họ tên</th><th>Đơn vị</th><th>%</th><th>Điểm</th><th>Thời gian</th><th>Lần nộp</th></tr>`;
+      (j.items||[]).forEach(it=>{
+        const tr = document.createElement('tr'); tr.className = 'row';
+        tr.innerHTML = `
+          <td class="rank">${it.rank}</td>
+          <td><strong>${escapeHTML(it.userName||'(Không tên)')}</strong></td>
+          <td>${escapeHTML(it.userUnit||'—')}</td>
+          <td><span class="badge">${it.pct}%</span></td>
+          <td>${it.correct}/${it.total}</td>
+          <td>${fmtTime(it.spentSec)}</td>
+          <td>${it.attempts}</td>
+        `;
+        $('#tbody').appendChild(tr);
+      });
+    }else{
+      $('#thead').innerHTML = `<tr><th>#</th><th>Đơn vị</th><th>Điểm TB</th><th>Số thành viên</th><th>Tiêu biểu</th></tr>`;
+      (j.items||[]).forEach(it=>{
+        const tr = document.createElement('tr'); tr.className = 'row';
+        tr.innerHTML = `
+          <td class="rank">${it.rank}</td>
+          <td><strong>${escapeHTML(it.unit)}</strong></td>
+          <td><span class="badge">${it.avgPct}%</span></td>
+          <td>${it.members}</td>
+          <td>${escapeHTML(it.topUser||'—')}</td>
+        `;
+        $('#tbody').appendChild(tr);
+      });
+    }
+  }catch(err){
+    $('#subtitle').textContent = 'Lỗi tải dữ liệu.'; console.error(err);
+  }
+}
+
+// Tải lần đầu
+document.addEventListener('DOMContentLoaded', loadLB);
+</script>
+</body>
+</html>
