@@ -297,14 +297,14 @@ function mmss(sec){
 function attachStartHandlers(scope){
   scope.querySelectorAll('button[data-bank]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      if(btn.classList.contains('is-disabled') || btn.disabled) return;
+      if(btn.classList.contains('is-disabled')) return;
       PTKV3.startExam({
         bankId: btn.dataset.bank,
         title: btn.dataset.title,
         total: Number(btn.dataset.total||0),
         durationSec: Number(btn.dataset.duration||0) || null,
         mode: btn.dataset.mode || 'exam',
-        target: btn.dataset.target || ''   // 🔹 mang theo đối tượng
+        target: btn.dataset.target || ''
       });
     });
   });
@@ -316,7 +316,6 @@ function attachStartHandlers(scope){
 */
 function renderBanks(banks){
   grid.innerHTML = '';
-
   if(!banks.length){
     const card = document.createElement('article');
     card.className = 'card';
@@ -324,31 +323,65 @@ function renderBanks(banks){
       <header class="row" style="align-items:flex-start">
         <h2 class="card__title">Chưa có kỳ kiểm tra</h2>
       </header>
-      <div class="meta">
-        <div class="row"><span class="icon">ℹ️</span>
-          <span>Kiểm tra bảng <strong>Banks</strong> trong Google Sheet hoặc thời gian mở kỳ thi.</span>
-        </div>
-      </div>
+      <div class="meta">Kiểm tra bảng <strong>Banks</strong> trong Google Sheet hoặc thời gian mở kỳ thi.</div>
       <div class="actions"><button class="btn" disabled>—</button></div>`;
     grid.appendChild(card);
     return;
   }
-
   banks.forEach(b=>{
-    const status = b.status || 'open';
-    const badge = (status === 'open')
-      ? ''
-      : `<span class="status-badge">${status==='upcoming'?'SẮP MỞ':'ĐÃ KẾT THÚC'}</span>`;
-
     const targets = Array.isArray(b.targets) ? b.targets : [];
+    const status = b.status || 'open';
+    const badge = (status==='open') ? '' :
+      `<span class="status-badge">${status==='upcoming'?'SẮP MỞ':'ĐÃ KẾT THÚC'}</span>`;
+    const btnDisabled = status!=='open';
+    const override = Number(b.totalOverride || 0);
 
-    /* ===== Trường hợp có nhiều đối tượng (ví dụ: Sĩ quan + QNCN) ===== */
-    if (targets.length > 1){
+    // hàm tính số câu hiển thị, ưu tiên min(questionCount, totalOverride)
+    const calcTotal = (t)=>{
+      let base = Number(t?.questionCount || b.questionCount || 0) || 0;
+      if(override > 0){
+        if(base > 0) return Math.min(base, override);
+        return override;
+      }
+      return base || '—';
+    };
+
+    const btnLabel = (b.mode==='mock') ? 'BẮT ĐẦU THI' : 'BẮT ĐẦU KIỂM TRA';
+
+    // Nếu 0 hoặc 1 đối tượng -> 1 card
+    if(!targets.length || targets.length===1){
+      const t = targets[0] || { key:'', label:'Cán bộ, QNCN' };
+      const total = calcTotal(t);
+
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.innerHTML = `
+        <header class="row" style="align-items:flex-start">
+          <h2 class="card__title">${escapeHTML(b.title)}</h2>${badge}
+        </header>
+        <div class="meta">
+          <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(t.label||'Cán bộ, QNCN')}</strong></span></div>
+          <div class="row"><span class="icon">📅</span><span>Bắt đầu: ${fmtLocal(b.startAtLocal)}</span></div>
+          <div class="row"><span class="icon">⏰</span><span>Kết thúc: ${fmtLocal(b.endAtLocal)}</span></div>
+          <div class="row"><span class="icon">📄</span><span>${total} câu hỏi</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn ${btnDisabled?'is-disabled':''}"
+            ${btnDisabled?'disabled':''}
+            data-bank="${b.bankId}"
+            data-title="${escapeHTML(b.title)}"
+            data-total="${total || 0}"
+            data-duration="${b.durationSec||''}"
+            data-mode="${b.mode||'exam'}"
+            data-target="${t.key||''}">
+            ${btnLabel}
+          </button>
+        </div>`;
+      grid.appendChild(card);
+    }else{
+      // Nhiều đối tượng -> mỗi đối tượng 1 card
       targets.forEach(t=>{
-        const total   = t.questionCount || b.totalOverride || b.questionCount || '—';
-        const tLabel  = t.label || 'Đối tượng';
-        const tKey    = t.key   || '';     // SQ / QNCN
-        const disabled = status !== 'open';
+        const total = calcTotal(t);
 
         const card = document.createElement('article');
         card.className = 'card';
@@ -357,60 +390,26 @@ function renderBanks(banks){
             <h2 class="card__title">${escapeHTML(b.title)}</h2>${badge}
           </header>
           <div class="meta">
-            <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(tLabel)}</strong></span></div>
+            <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(t.label||'')}</strong></span></div>
             <div class="row"><span class="icon">📅</span><span>Bắt đầu: ${fmtLocal(b.startAtLocal)}</span></div>
             <div class="row"><span class="icon">⏰</span><span>Kết thúc: ${fmtLocal(b.endAtLocal)}</span></div>
-            <div class="row"><span class="icon">📝</span><span>${total} câu hỏi</span></div>
+            <div class="row"><span class="icon">📄</span><span>${total} câu hỏi</span></div>
           </div>
           <div class="actions">
-            <button class="btn ${disabled?'is-disabled':''}"
-              ${disabled?'disabled':''}
+            <button class="btn ${btnDisabled?'is-disabled':''}"
+              ${btnDisabled?'disabled':''}
               data-bank="${b.bankId}"
               data-title="${escapeHTML(b.title)}"
               data-total="${total || 0}"
               data-duration="${b.durationSec||''}"
               data-mode="${b.mode||'exam'}"
-              data-target="${tKey}">
-              ${b.mode==='mock'?'BẮT ĐẦU THI':'BẮT ĐẦU KIỂM TRA'}
+              data-target="${t.key||''}">
+              ${btnLabel}
             </button>
           </div>`;
         grid.appendChild(card);
       });
-      return; // sang bank tiếp theo
     }
-
-    /* ===== Trường hợp chỉ 1 đối tượng (hoặc không cấu hình targets) ===== */
-    const t = targets[0] || null;
-    const total = b.totalOverride || (t ? t.questionCount : null) || b.questionCount || '—';
-    const targetLabel = t ? t.label : (b.targetLabel || 'Cán bộ, QNCN');
-    const targetKey   = t ? t.key   : (b.targetKey   || '');
-    const disabled    = status !== 'open';
-
-    const card = document.createElement('article');
-    card.className = 'card';
-    card.innerHTML = `
-      <header class="row" style="align-items:flex-start">
-        <h2 class="card__title">${escapeHTML(b.title)}</h2>${badge}
-      </header>
-      <div class="meta">
-        <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(targetLabel)}</strong></span></div>
-        <div class="row"><span class="icon">📅</span><span>Bắt đầu: ${fmtLocal(b.startAtLocal)}</span></div>
-        <div class="row"><span class="icon">⏰</span><span>Kết thúc: ${fmtLocal(b.endAtLocal)}</span></div>
-        <div class="row"><span class="icon">📝</span><span>${total} câu hỏi</span></div>
-      </div>
-      <div class="actions">
-        <button class="btn ${disabled?'is-disabled':''}"
-          ${disabled?'disabled':''}
-          data-bank="${b.bankId}"
-          data-title="${escapeHTML(b.title)}"
-          data-total="${total || 0}"
-          data-duration="${b.durationSec||''}"
-          data-mode="${b.mode||'exam'}"
-          data-target="${targetKey}">
-          ${b.mode==='mock'?'BẮT ĐẦU THI':'BẮT ĐẦU KIỂM TRA'}
-        </button>
-      </div>`;
-    grid.appendChild(card);
   });
 
   attachStartHandlers(grid);
