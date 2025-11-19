@@ -98,17 +98,8 @@ body.bg-red{
   box-shadow:0 0 6px rgba(255,215,75,.35);
 }
 
-/* Buttons – đồng bộ, ring mảnh, căn giữa & thẳng hàng */
-.actions{
-  margin-top:16px;
-  display:flex;
-  justify-content:center;
-  gap:8px;
-}
-.actions-multi{
-  flex-direction:column;
-  align-items:center;
-}
+/* Buttons */
+.actions{margin-top:16px;display:flex;justify-content:center;}
 .btn{
   min-width: 180px;
   padding: 8px 14px;
@@ -136,7 +127,7 @@ body.bg-red{
 /* Footer */
 .footer{color:#FFE6A6;text-align:center;padding:14px 16px 18px;border-top:1px solid rgba(255,255,255,.12)}
 
-/* === FIX MOBILE: thu gọn khoảng trống giữa HERO và GRID === */
+/* === FIX MOBILE === */
 @media (max-width: 768px){
   .hero{
     min-height: unset !important;
@@ -161,7 +152,6 @@ body.bg-red{
   .card .actions{ margin-top: 12px; }
   .btn{ min-width: 160px; padding: 8px 12px; font-size: 14px; }
 }
-/* === MOBILE: thêm khoảng cách giữa các ô kỳ thi === */
 @media (max-width: 768px){
   .grid{
     display: grid !important;
@@ -248,11 +238,9 @@ window.PTKV3_CFG = {
   SUBMIT_URL:  "",
   USE_QUEUE:   true
 };
-
 (function(){
   const KEYS = { CURRENT:"ptkv3:exam:current" };
   function save(k,v){ try{ sessionStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-
   window.PTKV3 = window.PTKV3 || {};
   window.PTKV3.startExam = function(meta){
     const cfg = {
@@ -263,12 +251,11 @@ window.PTKV3_CFG = {
       durationSec: Number(meta.durationSec || 0) || null,
       startedAt: Date.now(),
       user: meta.user || null,
-      target: meta.target || ""   // 🔹 Đối tượng: SQ / QNCN / CBQNCN...
+      target: meta.target || ""      // 🔹 lưu đối tượng
     };
     save(KEYS.CURRENT, cfg);
-
     const p = new URLSearchParams({ bank: cfg.bankId, mode: cfg.mode });
-    if (cfg.target) p.set('target', cfg.target);   // gửi kèm sang lambai.html
+    if (cfg.target) p.set('target', cfg.target);   // 🔹 truyền sang lambai.html
     location.href = window.PTKV3_CFG.EXAM_PAGE + "?" + p.toString();
   };
 })();
@@ -276,24 +263,18 @@ window.PTKV3_CFG = {
 
 <!-- ====== Render động từ Apps Script: listBanks ====== -->
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbwgpyEWzRG-wpqFSrYVzWiklxda-DY68LN-FHAw1rnd1rON5MBegLfx7gtFOWbUFtteYg/exec';
+const API = 'https://script.google.com/macros/s/AKfycbyaIok3ejGAODhEtIslN1DRdTa3maVYQ7ZzuhR-uIw-MRlpJsIhp0m0bBFP1dyP4eNLpQ/exec';
 const grid = document.getElementById('exam-grid');
 
+// Thay vì new Date(), dùng chuỗi local từ API (đã format sẵn)
 function fmtLocal(s){ return s && String(s).trim() ? s : '—'; }
 
 function escapeHTML(s){
-  return String(s||'').replace(/[&<>"']/g,c=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"
-  }[c]));
+  return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]));
 }
+function mmss(sec){ sec=Number(sec||0); const m=Math.floor(sec/60), s=sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
 
-function mmss(sec){
-  sec = Number(sec||0);
-  const m = Math.floor(sec/60), s = sec%60;
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-
-/* Gán handler cho nút bắt đầu, có cả target */
+/* Gán handler cho nút bắt đầu */
 function attachStartHandlers(scope){
   scope.querySelectorAll('button[data-bank]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -304,16 +285,13 @@ function attachStartHandlers(scope){
         total: Number(btn.dataset.total||0),
         durationSec: Number(btn.dataset.duration||0) || null,
         mode: btn.dataset.mode || 'exam',
-        target: btn.dataset.target || ''
+        target: btn.dataset.target || ''     // 🔹 truyền target
       });
     });
   });
 }
 
-/* Render danh sách banks
-   - Nếu bank.targets.length > 1 -> tách thành nhiều card (SQ, QNCN...)
-   - Nếu không có hoặc chỉ 1 target -> 1 card như bình thường
-*/
+/* Render danh sách banks – tách theo ĐỐI TƯỢNG (targets) */
 function renderBanks(banks){
   grid.innerHTML = '';
   if(!banks.length){
@@ -328,30 +306,41 @@ function renderBanks(banks){
     grid.appendChild(card);
     return;
   }
-  banks.forEach(b=>{
-    const targets = Array.isArray(b.targets) ? b.targets : [];
-    const status = b.status || 'open';
-    const badge = (status==='open') ? '' :
-      `<span class="status-badge">${status==='upcoming'?'SẮP MỞ':'ĐÃ KẾT THÚC'}</span>`;
-    const btnDisabled = status!=='open';
-    const override = Number(b.totalOverride || 0);
 
-    // hàm tính số câu hiển thị, ưu tiên min(questionCount, totalOverride)
+  banks.forEach(b=>{
+    const status = b.status || 'open';
+    const statusLabel = b.statusLabel ||
+      (status === 'upcoming' ? 'SẮP DIỄN RA' :
+       status === 'closed'   ? 'ĐÃ KẾT THÚC' : '');
+    const badge = statusLabel ? `<span class="status-badge">${statusLabel}</span>` : '';
+
+    const btnDisabled = status !== 'open';
+    const totalOverride = Number(b.totalOverride || 0);
+
+    // Danh sách đối tượng trong folder
+    const targets = (Array.isArray(b.targets) && b.targets.length)
+      ? b.targets
+      : [{
+          key:'',
+          label:'Cán bộ, QNCN',
+          questionCount: b.questionCount || 0
+        }];
+
+    // Hàm tính số câu hiển thị theo từng đối tượng
     const calcTotal = (t)=>{
-      let base = Number(t?.questionCount || b.questionCount || 0) || 0;
-      if(override > 0){
-        if(base > 0) return Math.min(base, override);
-        return override;
+      let base = Number(t.questionCount || b.questionCount || 0) || 0;
+      if (totalOverride > 0){
+        if (base > 0) return Math.min(base, totalOverride);
+        return totalOverride;
       }
       return base || '—';
     };
 
-    const btnLabel = (b.mode==='mock') ? 'BẮT ĐẦU THI' : 'BẮT ĐẦU KIỂM TRA';
-
-    // Nếu 0 hoặc 1 đối tượng -> 1 card
-    if(!targets.length || targets.length===1){
-      const t = targets[0] || { key:'', label:'Cán bộ, QNCN' };
+    // Tạo 1 card cho từng đối tượng
+    targets.forEach(t=>{
       const total = calcTotal(t);
+      const targetKey   = t.key   || '';
+      const targetLabel = t.label || 'Cán bộ, QNCN';
 
       const card = document.createElement('article');
       card.className = 'card';
@@ -360,7 +349,10 @@ function renderBanks(banks){
           <h2 class="card__title">${escapeHTML(b.title)}</h2>${badge}
         </header>
         <div class="meta">
-          <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(t.label||'Cán bộ, QNCN')}</strong></span></div>
+          <div class="row">
+            <span class="icon">🎯</span>
+            <span>Đối tượng: <strong>${escapeHTML(targetLabel)}</strong></span>
+          </div>
           <div class="row"><span class="icon">📅</span><span>Bắt đầu: ${fmtLocal(b.startAtLocal)}</span></div>
           <div class="row"><span class="icon">⏰</span><span>Kết thúc: ${fmtLocal(b.endAtLocal)}</span></div>
           <div class="row"><span class="icon">📄</span><span>${total} câu hỏi</span></div>
@@ -373,49 +365,18 @@ function renderBanks(banks){
             data-total="${total || 0}"
             data-duration="${b.durationSec||''}"
             data-mode="${b.mode||'exam'}"
-            data-target="${t.key||''}">
-            ${btnLabel}
+            data-target="${targetKey}">
+            BẮT ĐẦU KIỂM TRA
           </button>
         </div>`;
       grid.appendChild(card);
-    }else{
-      // Nhiều đối tượng -> mỗi đối tượng 1 card
-      targets.forEach(t=>{
-        const total = calcTotal(t);
-
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.innerHTML = `
-          <header class="row" style="align-items:flex-start">
-            <h2 class="card__title">${escapeHTML(b.title)}</h2>${badge}
-          </header>
-          <div class="meta">
-            <div class="row"><span class="icon">🎯</span><span>Đối tượng: <strong>${escapeHTML(t.label||'')}</strong></span></div>
-            <div class="row"><span class="icon">📅</span><span>Bắt đầu: ${fmtLocal(b.startAtLocal)}</span></div>
-            <div class="row"><span class="icon">⏰</span><span>Kết thúc: ${fmtLocal(b.endAtLocal)}</span></div>
-            <div class="row"><span class="icon">📄</span><span>${total} câu hỏi</span></div>
-          </div>
-          <div class="actions">
-            <button class="btn ${btnDisabled?'is-disabled':''}"
-              ${btnDisabled?'disabled':''}
-              data-bank="${b.bankId}"
-              data-title="${escapeHTML(b.title)}"
-              data-total="${total || 0}"
-              data-duration="${b.durationSec||''}"
-              data-mode="${b.mode||'exam'}"
-              data-target="${t.key||''}">
-              ${btnLabel}
-            </button>
-          </div>`;
-        grid.appendChild(card);
-      });
-    }
+    });
   });
 
   attachStartHandlers(grid);
 }
 
-/* Load banks */
+/* Load banks + thông báo lỗi */
 async function loadBanks(){
   try{
     const res = await fetch(`${API}?action=listBanks`, {cache:'no-store'});
@@ -442,14 +403,11 @@ async function loadBanks(){
 }
 loadBanks();
 
-/* Drawer mobile nhỏ gọn (giữ nguyên hành vi) */
+/* Drawer mobile nhỏ gọn */
 const d=document,drawer=d.getElementById('drawer'),bd=d.getElementById('backdrop');
 d.getElementById('hamburger')?.addEventListener('click',()=>{drawer.classList.add('open');bd.classList.add('open')});
 d.getElementById('close')?.addEventListener('click',()=>{drawer.classList.remove('open');bd.classList.remove('open')});
 bd?.addEventListener('click',()=>{drawer.classList.remove('open');bd.classList.remove('open')});
-</script>
-<script>
-function escapeHTML(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]));}
 </script>
 </body>
 </html>

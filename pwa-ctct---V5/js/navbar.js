@@ -220,38 +220,25 @@
     const aQuiz = findAnchorByText('lam bai kiem tra');
     if (aQuiz){
       const {panel, anchor} = ensureDropdownFor(aQuiz, 'lam-thi');
-      clearOther(panel, ['Kiem tra nhan thuc','On trac nghiem','Thi thu']);
-      addItem(panel, 'exam.html',     'Kiểm tra nhận thức');
+      clearOther(panel, ['Kiem tra','On trac nghiem','Thi thu']);
+      addItem(panel, 'kiemtra.html',     'Kiểm tra');
       addItem(panel, 'practice.html', 'Ôn trắc nghiệm');
       addItem(panel, 'quiz.html',     'Thi thử');
       disableNavigate(anchor);
       ensureChevron(anchor);
     }
-
-    // === KẾT QUẢ KIỂM TRA ===
-    const aRes = findAnchorByText('ket qua kiem tra');
-    if (aRes){
-      const {panel, anchor} = ensureDropdownFor(aRes, 'ket-qua');
-      clearOther(panel, ['Ket qua cua toi','Bang xep hang']);
-      addItem(panel, 'my-results.html',  'Kết quả của tôi');
-      addItem(panel, 'leaderboard.html', 'Bảng xếp hạng');
-      disableNavigate(anchor);
-      ensureChevron(anchor);
-    }
-
-    // chuyển thẳng mọi link cũ results.html -> my-results.html
+    // Giữ lại phần chuyển results.html -> my-results.html (nếu anh còn dùng đâu đó)
     document.querySelectorAll('a[href]').forEach(a=>{
       const href=(a.getAttribute('href')||'').trim();
       if (/results\.html(\?|#|$)/i.test(href)) a.setAttribute('href','my-results.html');
     });
 
-    // click ra ngoài -> đóng
+    // Click ra ngoài thì đóng dropdown (nếu có dropdown nào khác)
     document.addEventListener('click', (e)=>{
       document.querySelectorAll('.nav__item.has-dropdown').forEach(li=>{
         if (!li.contains(e.target)) li.classList.remove('open');
       });
-    });
-  }
+    });}
 
   window.addEventListener('load', ()=>setTimeout(buildMenus, 100));
 })();
