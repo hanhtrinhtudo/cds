@@ -572,13 +572,7 @@ function openAIDock(fileMeta, targetEl, opts = { reset: false }){
     sessionStorage.setItem(chatKey, JSON.stringify(nodes));
   };
   const restoreChat = ()=>{
-    const raw = sessionStorage.getItem(chatKey);
-    box.innerHTML = '';
-    if (!raw){
-      add('ai','Chào bạn! Mình có thể giúp gì được cho bạn trong chuyên đề này?');
-      return;
-    }
-    try{
+     try{
       const arr = JSON.parse(raw);
       arr.forEach(m=>add(m.who, m.html));
     }catch{
@@ -1014,4 +1008,5 @@ if (saved){
 </script>
 </body>
 </html>
+
 
