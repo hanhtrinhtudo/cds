@@ -571,14 +571,24 @@ function openAIDock(fileMeta, targetEl, opts = { reset: false }){
     }));
     sessionStorage.setItem(chatKey, JSON.stringify(nodes));
   };
-  const restoreChat = ()=>{
-     try{
-      const arr = JSON.parse(raw);
-      arr.forEach(m=>add(m.who, m.html));
-    }catch{
-      add('ai','Xin chào! Em là Trợ lý học tập AI của PTKV3 🌟.');
-    }
-  };
+  const restoreChat = () => {
+  const raw = sessionStorage.getItem(chatKey);
+  box.innerHTML = '';
+
+  if (!raw) {
+    // Không thêm lời chào mặc định nữa,
+    // để trống, chờ người dùng nhắn thì mới trả lời.
+    return;
+  }
+
+  try {
+    const arr = JSON.parse(raw);
+    arr.forEach(m => add(m.who, m.html));
+  } catch (e) {
+    console.warn('Khôi phục chat thất bại:', e);
+    // Nếu lỗi parse thì cũng để trống luôn
+  }
+};
 
   const ask = async ()=>{
     const q = inp.value.trim(); if(!q) return;
@@ -1008,5 +1018,6 @@ if (saved){
 </script>
 </body>
 </html>
+
 
 
