@@ -373,7 +373,7 @@ window.PTKV3_API = 'https://script.google.com/macros/s/AKfycbzmpvNrN87fv6EM3fA_-
 </footer>
 <script>
 // ===== HỒ SƠ ĐĂNG NHẬP (dùng chung với navbar) =====
-const AUTH_API = 'https://script.google.com/macros/s/AKfycbzEHcyyvrGEHGt9QSaGMu0sXPBQbJ5sIHk_MNc0t1sY7oExeWPm8rBNXDfIAaGxwvkkKQ/exec';
+const AUTH_API = 'https://script.google.com/macros/s/AKfycbwNiwcXOabEJQpfQ9XrTnfL5rolPg-Mq1wk-Gh4cUvEcVkAg25Be99YVyYfavsQgPz2/exec';
 const LS_PROFILE = 'ctct_profile';
 
 function getProfile(){
@@ -419,28 +419,50 @@ async function ensureProfileFromAuth(){
 
 // Hàm chuyển sang login, giữ lại trang hiện tại
 function redirectToLogin(){
-  const here = location.pathname.split('/').pop() || 'Hoctap.html';
-  const url  = 'login.html?redirect=' + encodeURIComponent(here);
-  location.href = url;
+  const ret = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.href = `login.html?redirect=${ret}`;
 }
 // ===== CORE HELPERS =====
 async function apiCall(action, payload = {}) {
   if (!window.PTKV3_API) throw new Error('Chưa cấu hình PTKV3_API');
+
+  // Các action nên luôn POST để ổn định
+  const FORCE_POST = new Set([
+    'ai.chat',
+    'ai.tom-tat',
+    'system.reindex.all',
+    'system.reindex.one',
+    'exam.saveResult',
+    'exam.listResults'
+  ]);
+
+  const doPost = async ()=>{
+    const res = await fetch(window.PTKV3_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify({ action, payload })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'API error');
+    return data.data || {};
+  };
+
+  if (FORCE_POST.has(action)) return await doPost();
+
+  // Các action khác: ưu tiên GET nếu ngắn, fallback POST nếu dài
   const u = new URL(window.PTKV3_API);
   const qs = JSON.stringify(payload);
   u.searchParams.set('action', action);
   u.searchParams.set('payload', qs);
-  if (u.toString().length > 1800) {
-    const res = await fetch(window.PTKV3_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify({ action, payload })
-    });
-    const data = await res.json(); if (!data.ok) throw new Error(data.error||'API error'); return data.data||{};
-  }
+
+  if (u.toString().length > 1700) return await doPost();
+
   const res = await fetch(u.toString(), { method: 'GET' });
-  const data = await res.json(); if (!data.ok) throw new Error(data.error||'API error'); return data.data||{};
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'API error');
+  return data.data || {};
 }
+
 const el=(t,a={},c=[])=>{const e=document.createElement(t);Object.entries(a).forEach(([k,v])=>{if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;else e.setAttribute(k,v)});(Array.isArray(c)?c:[c]).filter(Boolean).forEach(ch=>e.append(ch));return e;}
 const spinner=()=>{const d=document.createElement('div');d.className='spinner';return d;}
 const showEmpty=(t,m)=>{t.innerHTML='';t.append(el('div',{class:'empty'},m));}
@@ -506,14 +528,22 @@ async function mountMaterials(container, keyword=''){
         card.append(meta);
       }
 
-      if (!hasQuiz){
-        const act = el('div',{style:'padding:0 12px 12px;display:flex;justify-content:flex-start'});
-        const btn = el('button',{class:'btn',type:'button',style:'background:#facc15;color:#111;font-weight:700;border:none'},'Ôn tập');
-        btn.onclick = (e)=>{ e.stopPropagation(); mountQuizOnly(container,m); };
-        act.append(btn); card.append(act);
-      }
-
+      if (hasQuiz){
+  const act = el('div',{style:'padding:0 12px 12px;display:flex;justify-content:flex-start'});
+  const btn = el('button',{class:'btn',type:'button',style:'background:#facc15;color:#111;font-weight:700;border:none'},'Ôn tập');
+  btn.onclick = (e)=>{ e.stopPropagation(); mountQuizOnly(container,m); };
+  act.append(btn); card.append(act);
+} else {
+  // (tuỳ chọn) nếu muốn: hiện nút "Hỏi AI" mở viewer luôn
+  // hoặc để trống cho gọn
+}
       card.addEventListener('click', ()=> mountMaterialView(container, m));
+      card.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    mountMaterialView(container, m);
+  }
+});
       gridWrap.append(card);
     });
 
@@ -526,25 +556,63 @@ async function mountMaterials(container, keyword=''){
 }
 
 /* ===== AI DOCK ===== */
+/* ===== AI DOCK (FULL PATCH): UI toggle FAST/DEEP + persist + dynamic send ===== */
 function openAIDock(fileMeta, targetEl, opts = { reset: false }){
   const mountAt = targetEl || document.body;
+
+  // Remove dock cũ (nếu có)
   const oldDock = document.querySelector('.ai-dock');
   if (oldDock) oldDock.remove();
 
+  // Keys theo file
   const chatKey = STORAGE.CHAT_PREFIX + fileMeta.fileId;
+  const modeKey = `ptkv3.aiMode.${fileMeta.fileId}`;
+
   if (opts.reset) sessionStorage.removeItem(chatKey);
 
+  // Load mode đã lưu (mặc định FAST)
+  let currentMode = (sessionStorage.getItem(modeKey) || 'FAST').toUpperCase();
+  if (!['FAST','DEEP'].includes(currentMode)) currentMode = 'FAST';
+
+  // HTML dock
   const dock = document.createElement('div');
   dock.className = 'ai-dock';
   dock.innerHTML = `
     <div class="head">
       <span>Trò chuyện với AI</span>
-      <div style="display:flex;gap:6px">
-        <button id="aiMin" class="btn" aria-hidden="true">−</button>
-        <button id="aiClose" class="btn" aria-hidden="true">×</button>
+
+      <div style="display:flex;align-items:center;gap:8px">
+        <!-- Mode toggle -->
+        <div class="ai-mode" role="group" aria-label="Chế độ trả lời AI"
+          style="display:flex;gap:6px;align-items:center;
+                 background:rgba(255,255,255,.55);
+                 border:1px solid rgba(0,0,0,.08);
+                 padding:4px;border-radius:999px;">
+          <button type="button" class="ai-mode-btn" data-mode="FAST"
+            style="border:0;border-radius:999px;padding:6px 10px;
+                   font-weight:800;font-size:12px;cursor:pointer;">
+            ⚡ FAST
+          </button>
+          <button type="button" class="ai-mode-btn" data-mode="DEEP"
+            style="border:0;border-radius:999px;padding:6px 10px;
+                   font-weight:800;font-size:12px;cursor:pointer;">
+            🧠 DEEP
+          </button>
+        </div>
+
+        <!-- Utilities -->
+        <button type="button" id="aiReset"
+          title="Xoá cuộc trò chuyện"
+          style="border:0;border-radius:10px;padding:6px 10px;
+                 font-weight:800;font-size:12px;cursor:pointer;
+                 background:rgba(17,24,39,.08);">
+          🧹
+        </button>
       </div>
     </div>
+
     <div class="body" id="aiBody"></div>
+
     <div class="input">
       <input id="aiInput" placeholder="Nhập câu hỏi..." />
       <button id="aiSend" class="btn">Gửi</button>
@@ -555,8 +623,12 @@ function openAIDock(fileMeta, targetEl, opts = { reset: false }){
   const box = dock.querySelector('#aiBody');
   const inp = dock.querySelector('#aiInput');
   const btn = dock.querySelector('#aiSend');
+  const btnReset = dock.querySelector('#aiReset');
+  const modeBtns = [...dock.querySelectorAll('.ai-mode-btn')];
 
+  // Escape helper (để bubble an toàn)
   const esc = s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
   const add = (who, html)=>{
     const div = document.createElement('div');
     div.className = 'bubble ' + (who==='user' ? 'user' : 'ai');
@@ -564,52 +636,112 @@ function openAIDock(fileMeta, targetEl, opts = { reset: false }){
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
   };
+
   const saveChat = ()=>{
     const nodes = [...box.querySelectorAll('.bubble')].map(n=>({
-      who: n.classList.contains('user')?'user':'ai',
+      who: n.classList.contains('user') ? 'user' : 'ai',
       html: n.innerHTML
     }));
     sessionStorage.setItem(chatKey, JSON.stringify(nodes));
   };
-  const restoreChat = () => {
-  const raw = sessionStorage.getItem(chatKey);
-  box.innerHTML = '';
 
-  if (!raw) {
-    // Không thêm lời chào mặc định nữa,
-    // để trống, chờ người dùng nhắn thì mới trả lời.
-    return;
-  }
-
-  try {
-    const arr = JSON.parse(raw);
-    arr.forEach(m => add(m.who, m.html));
-  } catch (e) {
-    console.warn('Khôi phục chat thất bại:', e);
-    // Nếu lỗi parse thì cũng để trống luôn
-  }
-};
-
-  const ask = async ()=>{
-    const q = inp.value.trim(); if(!q) return;
-    add('user', esc(q)); inp.value='';
-    saveChat();
-    const wait = document.createElement('div'); wait.className='bubble ai'; wait.textContent='Đang suy nghĩ...'; box.append(wait);
+  const restoreChat = ()=>{
+    const raw = sessionStorage.getItem(chatKey);
+    box.innerHTML = '';
+    if (!raw) return;
 
     try{
-      const r = await apiCall('ai.chat',{ fileId:fileMeta.fileId, section:'', 'cau-hoi': q });
-      const src = r.source ? `<small>📚 Nguồn: ${esc(r.source)}</small>` : '';
-      wait.innerHTML = (r.answer || '(không có phản hồi)').replace(/\n/g,'<br>') + src;
+      const arr = JSON.parse(raw);
+      arr.forEach(m => add(m.who, m.html));
     }catch(e){
-      wait.innerHTML = '<b>Lỗi:</b> ' + esc(e.message||e);
+      console.warn('Khôi phục chat thất bại:', e);
     }
+  };
+
+  // Set UI mode button style
+  const applyModeUI = ()=>{
+    modeBtns.forEach(b=>{
+      const m = b.dataset.mode;
+      const active = (m === currentMode);
+      b.style.background = active ? '#111' : 'rgba(255,255,255,.8)';
+      b.style.color      = active ? '#fff' : '#111';
+      b.style.boxShadow  = active ? '0 2px 0 rgba(0,0,0,.15)' : 'none';
+      b.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  };
+
+  // Switch mode
+  const setMode = (m)=>{
+    currentMode = (m || 'FAST').toUpperCase();
+    if (!['FAST','DEEP'].includes(currentMode)) currentMode = 'FAST';
+    sessionStorage.setItem(modeKey, currentMode);
+    applyModeUI();
+  };
+
+  // Bind mode buttons
+  modeBtns.forEach(b=>{
+    b.addEventListener('click', ()=>{
+      setMode(b.dataset.mode);
+      // (tuỳ chọn) phản hồi nhanh trong chat
+      // add('ai', `<small>✅ Đã chuyển chế độ: <b>${esc(currentMode)}</b></small>`);
+      // saveChat();
+    });
+  });
+
+  // Reset chat
+  btnReset.addEventListener('click', ()=>{
+    sessionStorage.removeItem(chatKey);
+    box.innerHTML = '';
+    inp.focus();
+  });
+
+  // Ask handler
+  const ask = async ()=>{
+    const q = inp.value.trim();
+    if(!q) return;
+
+    add('user', esc(q));
+    inp.value = '';
+    saveChat();
+
+    const wait = document.createElement('div');
+    wait.className='bubble ai';
+    wait.textContent = (currentMode === 'DEEP') ? 'Đang phân tích sâu...' : 'Đang suy nghĩ...';
+    box.append(wait);
+    box.scrollTop = box.scrollHeight;
+
+    try{
+      const r = await apiCall('ai.chat', {
+        fileId:  fileMeta.fileId,
+        section: '',            // Toàn văn
+        mode:    currentMode,   // ✅ gửi mode động FAST/DEEP
+        'cau-hoi': q
+      });
+
+      const safeAns = esc(r.answer || '(không có phản hồi)').replace(/\n/g,'<br>');
+      const src = r.source ? `<small>📚 Nguồn: ${esc(r.source)}</small>` : '';
+      const tag = `<small style="opacity:.75">⚙️ Mode: <b>${esc(currentMode)}</b></small>`;
+
+      wait.innerHTML = safeAns + src + tag;
+    }catch(e){
+      wait.innerHTML = '<b>Lỗi:</b> ' + esc(e.message || e);
+    }
+
     saveChat();
     box.scrollTop = box.scrollHeight;
   };
 
-  inp.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); ask(); } };
-  btn.onclick = ask;
+  // Enter to send
+  inp.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      ask();
+    }
+  });
+  btn.addEventListener('click', ask);
 
+  // Boot
+  applyModeUI();
   restoreChat();
 }
 
@@ -780,11 +912,8 @@ function startFinalExam(items, container, meta){
   // --- Kiểm tra đăng nhập & đơn vị ---
   const prof = (typeof getProfile === 'function') ? getProfile() : null;
   if (!prof || !prof.name || !prof.unit){
-    // chưa đăng nhập hoặc chưa có đơn vị -> chuyển sang login
-    const ret = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `login.html?redirect=${ret}`;
-    return;
-  }
+  return;
+}
 
   // Ẩn nút "Bắt đầu kiểm tra" sau khi vào đề
   const btn = document.getElementById('btnStartFinal');
@@ -1018,4 +1147,5 @@ if (saved){
 </script>
 </body>
 </html>
+
 
