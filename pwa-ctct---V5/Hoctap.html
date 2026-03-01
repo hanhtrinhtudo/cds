@@ -433,19 +433,22 @@ async function apiCall(action, payload = {}) {
     'system.reindex.all',
     'system.reindex.one',
     'exam.saveResult',
-    'exam.listResults'
+    'exam.listResults',
+    'quiz.has',        // ✅ thêm
+    'quiz.getByFile'   // ✅ thêm
   ]);
 
   const doPost = async ()=>{
-    const res = await fetch(window.PTKV3_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify({ action, payload })
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'API error');
-    return data.data || {};
-  };
+  const res = await fetch(window.PTKV3_API, {
+    method: 'POST',
+    // ✅ tránh preflight OPTIONS
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    body: JSON.stringify({ action, payload })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'API error');
+  return data.data || {};
+};
 
   if (FORCE_POST.has(action)) return await doPost();
 
@@ -472,7 +475,8 @@ function driveThumb(fileId){
 }
 function toggleSearch(show){
   const s = document.getElementById('searchBar');
-  if (s) s.style.display = show ? '' : 'none';
+  if (!s) return;
+  s.classList.toggle('is-hidden', !show);
 }
 const STORAGE = {
   CURRENT: 'ptkv3.currentMaterial',
@@ -501,7 +505,10 @@ async function mountMaterials(container, keyword=''){
     container.innerHTML='';
     const gridWrap = el('div',{class:'grid-drive'});
     const items = data.items || [];
-    const flags = await Promise.all(items.map(m=>quizHasQuestions(m.fileId)));
+    const flags = [];
+for (const m of items){
+  flags.push(await quizHasQuestions(m.fileId));
+}
 
     items.forEach((m, idx)=>{
       const hasQuiz = !!flags[idx];
@@ -773,8 +780,23 @@ async function mountMaterialView(root, meta){
 
   // LEFT
   const viewer = el('section',{class:'section viewer'});
-  const iframe = el('iframe',{src:`https://drive.google.com/file/d/${meta.fileId}/preview`,allow:'autoplay'});
+  function driveGView(fileId){
+  // link file raw (cần share "anyone with link" để viewer đọc được)
+  const raw = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+  return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(raw)}`;
+}
+
+const iframe = el('iframe', { src: driveGView(meta.fileId) });
   viewer.append(iframe);
+  const openBtn = el('a',{
+  href:`https://drive.google.com/file/d/${meta.fileId}/view`,
+  target:'_blank',
+  rel:'noopener',
+  class:'btn ghost',
+  style:'display:inline-flex;justify-content:center;margin-top:10px'
+},'Mở tài liệu (tab mới)');
+
+viewer.append(openBtn);
   wrap.append(viewer);
 
   // RIGHT
@@ -912,6 +934,7 @@ function startFinalExam(items, container, meta){
   // --- Kiểm tra đăng nhập & đơn vị ---
   const prof = (typeof getProfile === 'function') ? getProfile() : null;
   if (!prof || !prof.name || !prof.unit){
+  redirectToLogin();
   return;
 }
 
@@ -1147,5 +1170,3 @@ if (saved){
 </script>
 </body>
 </html>
-
-
