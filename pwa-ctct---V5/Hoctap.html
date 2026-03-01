@@ -505,10 +505,7 @@ async function mountMaterials(container, keyword=''){
     container.innerHTML='';
     const gridWrap = el('div',{class:'grid-drive'});
     const items = data.items || [];
-    const flags = [];
-for (const m of items){
-  flags.push(await quizHasQuestions(m.fileId));
-}
+    const flags = await Promise.all(items.map(m => quizHasQuestions(m.fileId)));
 
     items.forEach((m, idx)=>{
       const hasQuiz = !!flags[idx];
@@ -719,11 +716,12 @@ function openAIDock(fileMeta, targetEl, opts = { reset: false }){
 
     try{
       const r = await apiCall('ai.chat', {
-        fileId:  fileMeta.fileId,
-        section: '',            // Toàn văn
-        mode:    currentMode,   // ✅ gửi mode động FAST/DEEP
-        'cau-hoi': q
-      });
+      fileId: meta.fileId,
+      title: fileMeta['tieu-de'] || '',     // ✅ neo theo tên tài liệu
+      mode: currentMode,
+      'cau-hoi': q
+      // section: ''   // ❌ bỏ luôn field này để backend khỏi rẽ nhầm
+    });
 
       const safeAns = esc(r.answer || '(không có phản hồi)').replace(/\n/g,'<br>');
       const src = r.source ? `<small>📚 Nguồn: ${esc(r.source)}</small>` : '';
@@ -780,14 +778,17 @@ async function mountMaterialView(root, meta){
 
   // LEFT
   const viewer = el('section',{class:'section viewer'});
-  function driveGView(fileId){
-  // link file raw (cần share "anyone with link" để viewer đọc được)
-  const raw = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
-  return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(raw)}`;
+  function drivePreview(fileId){
+  // cần share file để xem được
+  return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
 }
 
-const iframe = el('iframe', { src: driveGView(meta.fileId) });
-  viewer.append(iframe);
+const iframe = el('iframe', {
+  src: drivePreview(meta.fileId),
+  allow: 'autoplay; fullscreen',
+  referrerpolicy: 'no-referrer-when-downgrade'
+});
+viewer.append(iframe);
   const openBtn = el('a',{
   href:`https://drive.google.com/file/d/${meta.fileId}/view`,
   target:'_blank',
@@ -1170,3 +1171,4 @@ if (saved){
 </script>
 </body>
 </html>
+
