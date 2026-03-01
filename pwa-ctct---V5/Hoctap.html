@@ -716,12 +716,11 @@ function openAIDock(fileMeta, targetEl, opts = { reset: false }){
 
     try{
       const r = await apiCall('ai.chat', {
-      fileId: meta.fileId,
-      title: fileMeta['tieu-de'] || '',     // ✅ neo theo tên tài liệu
-      mode: currentMode,
-      'cau-hoi': q
-      // section: ''   // ❌ bỏ luôn field này để backend khỏi rẽ nhầm
-    });
+        fileId: fileMeta.fileId,
+        title: fileMeta['tieu-de'] || '',
+        mode: currentMode,
+        'cau-hoi': q
+      });
 
       const safeAns = esc(r.answer || '(không có phản hồi)').replace(/\n/g,'<br>');
       const src = r.source ? `<small>📚 Nguồn: ${esc(r.source)}</small>` : '';
@@ -1171,4 +1170,5 @@ if (saved){
 </script>
 </body>
 </html>
+
 
