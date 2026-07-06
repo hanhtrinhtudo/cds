@@ -1,0 +1,6 @@
+{
+  "name": "AI Chính trị viên số",
+  "description": "Nền tảng nâng cao chất lượng giáo dục chính trị và phổ biến, giáo dục pháp luật",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

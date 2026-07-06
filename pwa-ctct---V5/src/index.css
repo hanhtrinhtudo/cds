@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --brand-primary: #a41919;
+  --brand-dark: #8b1616;
+  --brand-gold: #ffd966;
+  --brand-gold-hover: #ffe680;
+  --brand-warm: #fff8e7;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --border-default: #e5e7eb;
+  --bg-app: #f6f7fb;
+}
+
+/* Existing emerald utilities are brand utilities and resolve to CDS red/gold.
+   Green remains available for success, correct, completed, and positive states. */
+@theme {
+  --color-emerald-50: #fff8e7;
+  --color-emerald-100: #fff1c7;
+  --color-emerald-200: #ffe680;
+  --color-emerald-300: #ffd966;
+  --color-emerald-400: #ffd966;
+  --color-emerald-500: #a41919;
+  --color-emerald-600: #a41919;
+  --color-emerald-700: #a41919;
+  --color-emerald-800: #a41919;
+  --color-emerald-900: #8b1616;
+  --color-emerald-950: #8b1616;
+}
+
+html,
+body,
+#root {
+  width: 100vw;
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--text-main);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
