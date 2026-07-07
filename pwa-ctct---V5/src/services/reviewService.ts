@@ -25,6 +25,7 @@ export interface ReviewPack {
   wrong: number;
   skip: number;
   answers: ReviewAnswer[];
+  updatedAt?: string;
 }
 
 export const REVIEW_KEYS = {
@@ -42,9 +43,17 @@ const latestKeyByType: Record<ReviewSourceType, string> = {
   learningQuiz: REVIEW_KEYS.latestLearningQuiz
 };
 
+let activeUserId = "";
+let hydratedRemoteReviews: ReviewPack[] | null = null;
+const scopedHistoryKey = (userId: string) => `${REVIEW_KEYS.history}_${userId}`;
+const scopedLatestKey = (userId: string, sourceType: ReviewSourceType) => `${latestKeyByType[sourceType]}_${userId}`;
+
 const safeReadPackList = (): ReviewPack[] => {
   try {
-    const value = JSON.parse(localStorage.getItem(REVIEW_KEYS.history) || "[]");
+    const raw = activeUserId
+      ? localStorage.getItem(scopedHistoryKey(activeUserId))
+      : localStorage.getItem(REVIEW_KEYS.history);
+    const value = JSON.parse(raw || "[]");
     return Array.isArray(value) ? value : [];
   } catch {
     return [];
@@ -52,20 +61,42 @@ const safeReadPackList = (): ReviewPack[] => {
 };
 
 export const reviewService = {
+  setCurrentUser(userId: string): void {
+    if (activeUserId !== userId) hydratedRemoteReviews = null;
+    activeUserId = userId;
+  },
+
+  clearCurrentUser(): void {
+    activeUserId = "";
+    hydratedRemoteReviews = null;
+  },
+
+  hydrateRemoteReviews(userId: string, reviews: ReviewPack[]): void {
+    activeUserId = userId;
+    hydratedRemoteReviews = reviews;
+    localStorage.setItem(scopedHistoryKey(userId), JSON.stringify(reviews.slice(0, 50)));
+    reviews.forEach(pack => localStorage.setItem(scopedLatestKey(userId, pack.sourceType), JSON.stringify(pack)));
+  },
+
   saveReviewPack(pack: ReviewPack): void {
-    localStorage.setItem(latestKeyByType[pack.sourceType], JSON.stringify(pack));
+    const latestKey = activeUserId ? scopedLatestKey(activeUserId, pack.sourceType) : latestKeyByType[pack.sourceType];
+    const historyKey = activeUserId ? scopedHistoryKey(activeUserId) : REVIEW_KEYS.history;
+    localStorage.setItem(latestKey, JSON.stringify(pack));
     const previous = safeReadPackList();
     const next = [pack, ...previous.filter(item => item.attemptId !== pack.attemptId)].slice(0, 30);
-    localStorage.setItem(REVIEW_KEYS.history, JSON.stringify(next));
+    localStorage.setItem(historyKey, JSON.stringify(next));
+    if (hydratedRemoteReviews) hydratedRemoteReviews = next;
   },
 
   getReviewHistory(): ReviewPack[] {
-    return safeReadPackList();
+    return hydratedRemoteReviews || safeReadPackList();
   },
 
   getLatestReview(sourceType: ReviewSourceType): ReviewPack | null {
     try {
-      const value = localStorage.getItem(latestKeyByType[sourceType]);
+      const value = activeUserId
+        ? localStorage.getItem(scopedLatestKey(activeUserId, sourceType))
+        : localStorage.getItem(latestKeyByType[sourceType]);
       return value ? JSON.parse(value) as ReviewPack : null;
     } catch {
       return null;

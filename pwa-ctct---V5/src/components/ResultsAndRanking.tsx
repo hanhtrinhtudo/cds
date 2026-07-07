@@ -19,6 +19,9 @@ import {
 import { RankingEntry } from "../services/reportService";
 import { examService } from "../services/examService";
 import { ReviewPack, ReviewSourceType, reviewService } from "../services/reviewService";
+import { Alert, Button, EmptyState } from "./ui";
+import { RankingRow, ReviewAnswerCard } from "./product";
+import { AppContainer, AppPage, AppStack } from "./layout";
 
 type ExamOption = {
   key: string;
@@ -247,8 +250,8 @@ export default function ResultsAndRanking({
   const reviewSourceLabel: Record<ReviewSourceType, string> = {
     practice: "Ôn trắc nghiệm",
     mock: "Thi thử",
-    official: "Kiểm tra nhận thức",
-    learningQuiz: "Quiz bài học"
+    official: "Kiểm tra",
+    learningQuiz: "Ôn tập bài học"
   };
 
   const filteredReviewAnswers = selectedReview?.answers.filter(answer => {
@@ -264,16 +267,18 @@ export default function ResultsAndRanking({
   const strokeDashoffset = circumference - (reqCompletionPercent / 100) * circumference;
 
   return (
-    <div className="space-y-4" id="results-and-ranking-tab">
+    <AppPage variant="plain" id="results-and-ranking-tab">
+      <AppContainer bleed>
+        <AppStack gap="md">
       
       {/* Dynamic Sub-tab selector */}
-      <div className="bg-white border border-slate-100 rounded-2xl p-1 shadow-sm flex text-center font-bold text-xs shrink-0">
+      <div className="pixel-surface-flat flex shrink-0 p-1 text-center text-xs font-bold">
         <button
           onClick={() => setSubTab("profile")}
           className={`flex-1 py-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 min-h-[44px] ${
             subTab === "profile" 
-              ? "bg-emerald-800 text-white shadow" 
-              : "text-slate-500 hover:bg-slate-50"
+              ? "bg-[var(--app-color-brand-primary)] text-white" 
+              : "text-[var(--app-color-text-muted)] hover:bg-slate-50"
           }`}
         >
           <Award size={14} />
@@ -283,8 +288,8 @@ export default function ResultsAndRanking({
           onClick={() => setSubTab("leaderboard")}
           className={`flex-1 py-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 min-h-[44px] ${
             subTab === "leaderboard" 
-              ? "bg-emerald-800 text-white shadow" 
-              : "text-slate-500 hover:bg-slate-50"
+              ? "bg-[var(--app-color-brand-primary)] text-white" 
+              : "text-[var(--app-color-text-muted)] hover:bg-slate-50"
           }`}
         >
           <Star size={14} />
@@ -293,78 +298,82 @@ export default function ResultsAndRanking({
       </div>
 
       {remoteFallback && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] font-bold text-amber-900">
-          Chưa tải được dữ liệu kết quả trực tuyến. Một số thông tin có thể chưa được cập nhật.
-        </div>
+        <Alert
+          variant="warning"
+          description="Không thể cập nhật kết quả mới. Một số thông tin có thể chưa được hiển thị."
+        />
       )}
      
-      <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm space-y-2">
-        <label className="block text-[10px] font-black uppercase text-slate-500">Kỳ thi / kiểm tra</label>
+      <div className="pixel-surface-flat space-y-2 p-3">
+        <label className="block text-caption font-extrabold uppercase text-[var(--app-color-text-muted)]">Nội dung đánh giá</label>
         <select
           value={selectedBank}
           onChange={event => setSelectedBank(event.target.value)}
-          className="w-full min-h-[42px] rounded-xl border border-slate-200 bg-white px-3 text-xs"
+          className="w-full min-h-11 rounded-xl border border-[var(--app-color-border)] bg-white px-3 text-xs"
         >
           <option value="">Tất cả kỳ thi</option>
           {examOptions.map(option => <option key={option.key} value={option.key}>{option.apiSource === "mock" ? "Thi thử — " : ""}{option.title}</option>)}
         </select>
-        {remoteLoading && <p className="text-[10px] text-slate-400">Đang tải kết quả trực tuyến...</p>}
+        {remoteLoading && <p className="text-caption text-[var(--app-color-text-muted)]">Đang tải kết quả...</p>}
       </div>
 
       {subTab === "profile" ? (
-        <div className="space-y-4 animate-fade-in" id="profile-subtab-container">
+        <div className="space-y-3 motion-fade-in" id="profile-subtab-container">
           {remoteResults.length > 0 && (
-            <div className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm space-y-2">
-              <h3 className="text-[10px] font-black uppercase text-slate-500">Kết quả của tôi</h3>
+            <div className="pixel-surface space-y-2 p-3">
+              <h3 className="text-caption font-extrabold uppercase text-[var(--app-color-text-muted)]">Kết quả của tôi</h3>
               {remoteResults.map((result, index) => (
-                <div key={String(result.attemptId || result.id || index)} className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[11px] flex justify-between gap-3">
+                <div key={String(result.attemptId || result.id || index)} className="p-2.5 bg-slate-50 rounded-xl text-body-s flex justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-black text-slate-800 truncate">{result.bankTitle || result.title || result.bank || selectedBank || "Kỳ kiểm tra"}</p>
-                    <p className="text-[9px] text-slate-500 mt-1">{result.ts || result.date || result.submittedAt || ""}</p>
+                    <p className="font-extrabold text-[var(--app-color-text-primary)] truncate">{result.bankTitle || result.title || result.bank || selectedBank || "Kỳ kiểm tra"}</p>
+                    <p className="text-caption text-[var(--app-color-text-muted)] mt-1">{result.ts || result.date || result.submittedAt || ""}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-black text-red-800">{result.pct ?? result.percentAvg ?? (result.total ? Math.round((Number(result.correct || 0) / Number(result.total)) * 100) : 0)}%</p>
-                    <p className="text-[9px] text-slate-500">{result.attemptsUsed ?? result.attempts ?? 0} lượt</p>
+                    <p className="font-extrabold text-red-800">{result.pct ?? result.percentAvg ?? (result.total ? Math.round((Number(result.correct || 0) / Number(result.total)) * 100) : 0)}%</p>
+                    <p className="text-caption text-[var(--app-color-text-muted)]">{result.attemptsUsed ?? result.attempts ?? 0} lượt</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
           {!remoteLoading && !remoteFallback && remoteResultsEmpty && (
-            <div className="bg-white border border-slate-100 rounded-[24px] p-4 text-center text-[10px] text-slate-500">
-              Chưa có kết quả cho kỳ thi đã chọn.
-            </div>
+            <EmptyState
+              variant="results"
+              title="Chưa có kết quả"
+              description="Hiện chưa có kết quả cho nội dung đã chọn."
+              className="bg-white"
+            />
           )}
           
           {/* MD3 Profile Header card */}
-          <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-emerald-800/5 rounded-full -mr-8 -mt-8" />
+          <div className="pixel-surface relative flex items-center gap-3 overflow-hidden p-3">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-500/10 to-[var(--app-color-brand-primary)]/5 rounded-full -mr-8 -mt-8" />
             
             {/* User Avatar Badge with initial letters */}
-            <div className="w-14 h-14 bg-emerald-800 text-white font-black text-lg rounded-2xl flex items-center justify-center shrink-0 shadow-md">
+            <div className="w-12 h-12 bg-[var(--app-color-brand-primary)] text-white font-extrabold text-base rounded-2xl flex items-center justify-center shrink-0">
               {user.fullName.split(" ").pop()?.substring(0, 2).toUpperCase()}
             </div>
 
             <div className="min-w-0">
-              <span className="px-1.5 py-0.5 bg-yellow-400 text-slate-950 font-black rounded text-[8px] uppercase tracking-wide">
+              <span className="px-1.5 py-0.5 bg-yellow-400 text-[var(--app-color-text-primary)] font-extrabold rounded text-caption uppercase tracking-wide">
                 {currentRankEntry?.badge || "Đồng chí"}
               </span>
-              <h2 className="text-sm font-black text-slate-800 mt-1 leading-tight">{user.fullName}</h2>
-              <p className="text-[10px] text-slate-400 font-extrabold uppercase mt-0.5 truncate">
+              <h2 className="text-sm font-extrabold text-[var(--app-color-text-primary)] mt-1 leading-tight">{user.fullName}</h2>
+              <p className="text-caption text-[var(--app-color-text-muted)] font-extrabold uppercase mt-0.5 truncate">
                 ĐƠN VỊ: {units.find(u => u.id === user.unitId)?.name || "Chưa xác định"}
               </p>
             </div>
           </div>
 
           {/* Bento Grid: Circular progress & Learning Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             
             {/* Required Lesson Progress Circular Circle */}
-            <div className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm flex items-center justify-between gap-4">
+            <div className="pixel-surface flex items-center justify-between gap-3 p-3">
               <div className="space-y-1.5">
-                <p className="text-[9px] font-black tracking-wider uppercase text-slate-400">CHỦ ĐỀ BẮT BUỘC</p>
-                <h3 className="text-xs font-black text-slate-800 leading-tight">Hoàn thành bài</h3>
-                <p className="text-[10px] text-slate-400 leading-tight">Đã học {completedRequired} trên tổng số {totalRequired} bài bắt buộc chỉ định.</p>
+                <p className="text-caption font-extrabold tracking-wider uppercase text-[var(--app-color-text-muted)]">CHỦ ĐỀ BẮT BUỘC</p>
+                <h3 className="text-xs font-extrabold text-[var(--app-color-text-primary)] leading-tight">Hoàn thành bài</h3>
+                <p className="text-caption text-[var(--app-color-text-muted)] leading-tight">Đã học {completedRequired} trên tổng số {totalRequired} bài bắt buộc chỉ định.</p>
               </div>
 
               {/* SVG Ring charts */}
@@ -374,7 +383,7 @@ export default function ResultsAndRanking({
                     cx="40"
                     cy="40"
                     r={radius}
-                    className="text-slate-100"
+                    className="text-white/85"
                     strokeWidth="8"
                     stroke="currentColor"
                     fill="transparent"
@@ -383,7 +392,7 @@ export default function ResultsAndRanking({
                     cx="40"
                     cy="40"
                     r={radius}
-                    className="text-emerald-800"
+                    className="text-[var(--app-color-brand-primary)]"
                     strokeWidth="8"
                     strokeDasharray={circumference}
                     strokeDashoffset={strokeDashoffset}
@@ -393,30 +402,30 @@ export default function ResultsAndRanking({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-black text-slate-800">{reqCompletionPercent}%</span>
+                  <span className="text-xs font-extrabold text-[var(--app-color-text-primary)]">{reqCompletionPercent}%</span>
                 </div>
               </div>
             </div>
 
             {/* Quick stats grid */}
-            <div className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm grid grid-cols-2 gap-3.5">
+            <div className="pixel-surface grid grid-cols-2 gap-3 p-3">
               <div className="space-y-0.5">
-                <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">TỔNG ĐIỂM THI ĐUA</span>
-                <p className="text-sm font-black text-slate-800">{currentRankEntry?.points || 0} Điểm</p>
-                <p className="text-[9px] text-slate-400">Hạng {currentRankEntry?.rank || "N/A"} toàn phân đội</p>
+                <span className="text-caption font-extrabold uppercase tracking-wider text-[var(--app-color-text-muted)]">TỔNG ĐIỂM THI ĐUA</span>
+                <p className="text-sm font-extrabold text-[var(--app-color-text-primary)]">{currentRankEntry?.points || 0} Điểm</p>
+                <p className="text-caption text-[var(--app-color-text-muted)]">Hạng {currentRankEntry?.rank || "N/A"} toàn phân đội</p>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">LUYỆN TẬP</span>
-                <p className="text-sm font-black text-slate-800">{avgQuizScore} / 10</p>
-                <p className="text-[9px] text-slate-400">Trung bình {userQuizAttempts.length} lượt luyện tập</p>
+                <span className="text-caption font-extrabold uppercase tracking-wider text-[var(--app-color-text-muted)]">LUYỆN TẬP</span>
+                <p className="text-sm font-extrabold text-[var(--app-color-text-primary)]">{avgQuizScore} / 10</p>
+                <p className="text-caption text-[var(--app-color-text-muted)]">Trung bình {userQuizAttempts.length} lượt luyện tập</p>
               </div>
             </div>
 
           </div>
 
           {/* Weak Topics & Smart Recommendations Section */}
-          <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm space-y-3">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-2">
+          <div className="pixel-surface space-y-2.5 p-3">
+            <h4 className="text-caption font-extrabold text-[var(--app-color-text-muted)] uppercase tracking-wider flex items-center gap-1.5 pb-1">
               <ShieldAlert size={14} className="text-red-500 shrink-0" />
               <span>Nội dung cần ôn lại</span>
             </h4>
@@ -424,23 +433,23 @@ export default function ResultsAndRanking({
             {weakTopics.length > 0 ? (
               <div className="space-y-2.5">
                 {weakTopics.map(item => (
-                  <div key={item.topic.id} className="p-3 bg-red-50/50 border border-red-100 rounded-2xl text-xs space-y-2">
+                  <div key={item.topic.id} className="p-2.5 bg-red-50/50 rounded-2xl text-xs space-y-2">
                     <div>
-                      <p className="font-bold text-slate-800 leading-snug">{item.topic.title}</p>
-                      <p className="text-[9px] text-red-700 font-bold mt-0.5">{item.reason}</p>
+                      <p className="font-bold text-[var(--app-color-text-primary)] leading-snug">{item.topic.title}</p>
+                      <p className="text-caption text-red-700 font-bold mt-0.5">{item.reason}</p>
                     </div>
                     <button
                       onClick={() => onNavigate("aitutor", item.topic)}
-                      className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-emerald-800 hover:text-emerald-950 bg-white px-2.5 py-1 rounded-full shadow-sm border border-emerald-100 cursor-pointer"
+                      className="inline-flex items-center gap-1 text-caption font-extrabold uppercase text-[var(--app-color-brand-primary)] hover:text-[var(--app-color-brand-primary-dark)] bg-white px-2.5 py-1 rounded-full cursor-pointer"
                     >
                       <Sparkles size={10} />
-                      <span>Nhờ AI giải thích</span>
+                      <span>Trao đổi với AI Chính trị viên</span>
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="p-4 rounded-2xl bg-green-50/50 border border-green-100 text-center text-xs space-y-2 text-green-800 font-bold">
+              <div className="p-3 rounded-2xl bg-green-50/50 text-center text-xs space-y-2 text-green-800 font-bold">
                 <CheckCircle size={20} className="mx-auto text-green-600" />
                 <p>Tuyệt vời! Bản lĩnh chính trị xuất sắc, không phát hiện lỗ hổng lý thuyết.</p>
               </div>
@@ -448,14 +457,14 @@ export default function ResultsAndRanking({
           </div>
 
           {/* Detailed Logs Accordion Card (Quiz & Official exam attempts) */}
-          <div className="space-y-3">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Lịch sử bài kiểm tra đã nộp</h4>
+          <div className="space-y-2.5">
+            <h4 className="text-caption font-extrabold text-[var(--app-color-text-muted)] uppercase tracking-widest pl-1">Lịch sử bài đã nộp</h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Quiz Log */}
-              <div className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm space-y-2">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-50 pb-1.5 flex items-center gap-1.5">
-                  <ClipboardList size={12} className="text-emerald-800" />
+              <div className="pixel-surface space-y-2 p-3">
+                <p className="text-caption font-extrabold text-[var(--app-color-text-muted)] uppercase tracking-wider pb-1 flex items-center gap-1.5">
+                  <ClipboardList size={12} className="text-[var(--app-color-brand-primary)]" />
                   <span>Trắc nghiệm nhanh ({userQuizAttempts.length})</span>
                 </p>
                 {userQuizAttempts.length > 0 ? (
@@ -463,9 +472,9 @@ export default function ResultsAndRanking({
                     {userQuizAttempts.map(attempt => {
                       const topic = topics.find(t => t.id === attempt.topicId);
                       return (
-                        <div key={attempt.id} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                          <span className="font-bold text-slate-800 truncate leading-none">{topic?.title || "Ôn tập tổng hợp"}</span>
-                          <span className={`px-2 py-0.5 rounded-full font-black text-[9px] uppercase shrink-0 ${
+                        <div key={attempt.id} className="p-2 bg-slate-50 rounded-xl text-body-s flex justify-between items-center gap-2">
+                          <span className="font-bold text-[var(--app-color-text-primary)] truncate leading-none">{topic?.title || "Ôn tập tổng hợp"}</span>
+                          <span className={`px-2 py-0.5 rounded-full font-extrabold text-caption uppercase shrink-0 ${
                             attempt.score >= 6 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                           }`}>
                             {attempt.score}/10
@@ -475,22 +484,22 @@ export default function ResultsAndRanking({
                     })}
                   </div>
                 ) : (
-                  <p className="text-center text-[10px] text-slate-400 py-4">Chưa thực hiện tự luyện nào</p>
+                  <p className="text-center text-caption text-[var(--app-color-text-muted)] py-4">Chưa thực hiện tự luyện nào</p>
                 )}
               </div>
 
               {/* Official Exam Log */}
-              <div className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm space-y-2">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-50 pb-1.5 flex items-center gap-1.5">
+              <div className="pixel-surface space-y-2 p-3">
+                <p className="text-caption font-extrabold text-[var(--app-color-text-muted)] uppercase tracking-wider pb-1 flex items-center gap-1.5">
                   <Calendar size={12} className="text-red-700" />
                   <span>Sát hạch chính thức ({userExamAttempts.length})</span>
                 </p>
                 {userExamAttempts.length > 0 ? (
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {userExamAttempts.map(attempt => (
-                      <div key={attempt.id} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[11px] flex justify-between items-center gap-2">
-                        <span className="font-bold text-slate-800 truncate leading-none">Chính trị viên đợt 1</span>
-                        <span className={`px-2 py-0.5 rounded-full font-black text-[9px] uppercase shrink-0 ${
+                      <div key={attempt.id} className="p-2 bg-slate-50 rounded-xl text-body-s flex justify-between items-center gap-2">
+                        <span className="font-bold text-[var(--app-color-text-primary)] truncate leading-none">Chính trị viên đợt 1</span>
+                        <span className={`px-2 py-0.5 rounded-full font-extrabold text-caption uppercase shrink-0 ${
                           attempt.passed ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                         }`}>
                           {attempt.score}/10 {attempt.passed ? "Đạt" : "Hỏng"}
@@ -499,24 +508,24 @@ export default function ResultsAndRanking({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center text-[10px] text-slate-400 py-4">Chưa có kết quả chính quy</p>
+                  <p className="text-center text-caption text-[var(--app-color-text-muted)] py-4">Chưa có kết quả Kiểm tra</p>
                 )}
               </div>
             </div>
           </div>
 
           
-          <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm space-y-3">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-50 pb-2">
+          <div className="pixel-surface space-y-2.5 p-3">
+            <div className="flex items-start justify-between gap-3 pb-1">
               <div>
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Xem lại bài đã nộp</h4>
-                <p className="text-[9px] text-slate-500 mt-1 leading-relaxed">
+                <h4 className="text-caption font-extrabold text-[var(--app-color-text-muted)] uppercase tracking-wider">Xem lại bài đã nộp</h4>
+                <p className="text-caption text-[var(--app-color-text-muted)] mt-1 leading-relaxed">
                   Lịch sử xem lại được lưu trên thiết bị đang sử dụng.
                 </p>
               </div>
-              <button type="button" onClick={loadReviewHistory} className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-[9px] font-black text-slate-600">
+              <Button type="button" onClick={loadReviewHistory} variant="secondary" size="sm">
                 Làm mới
-              </button>
+              </Button>
             </div>
 
             {reviewHistory.length > 0 ? (
@@ -530,34 +539,34 @@ export default function ResultsAndRanking({
                         setSelectedReview(pack);
                         setReviewFilter("all");
                       }}
-                      className={`min-w-[180px] text-left p-3 rounded-2xl border text-xs ${
+                      className={`min-w-[172px] text-left p-2.5 rounded-2xl text-xs ${
                         selectedReview?.attemptId === pack.attemptId
-                          ? "bg-red-50 border-red-200 text-red-900"
-                          : "bg-slate-50 border-slate-100 text-slate-700"
+                          ? "bg-red-50 text-red-900"
+                          : "bg-slate-50 text-[var(--app-color-text-secondary)]"
                       }`}
                     >
-                      <p className="text-[9px] font-black uppercase text-slate-400">{reviewSourceLabel[pack.sourceType]}</p>
-                      <p className="font-black truncate mt-1">{pack.title}</p>
-                      <p className="text-[10px] mt-1">Điểm {pack.score}/10 • {pack.correct}/{pack.total} đúng</p>
-                      <p className="text-[9px] text-slate-400 mt-1">{new Date(pack.submittedAt).toLocaleString("vi-VN")}</p>
+                      <p className="text-caption font-extrabold uppercase text-[var(--app-color-text-muted)]">{reviewSourceLabel[pack.sourceType]}</p>
+                      <p className="font-extrabold truncate mt-1">{pack.title}</p>
+                      <p className="text-caption mt-1">Điểm {pack.score}/10 • {pack.correct}/{pack.total} đúng</p>
+                      <p className="text-caption text-[var(--app-color-text-muted)] mt-1">{new Date(pack.submittedAt).toLocaleString("vi-VN")}</p>
                     </button>
                   ))}
                 </div>
 
                 {selectedReview && (
                   <div className="space-y-3">
-                    <div className="p-3 rounded-2xl bg-slate-900 text-white">
-                      <p className="text-[9px] font-black uppercase text-yellow-300">{reviewSourceLabel[selectedReview.sourceType]}</p>
-                      <h5 className="font-black text-sm mt-1">{selectedReview.title}</h5>
-                      <div className="grid grid-cols-4 gap-2 mt-3 text-center text-[10px]">
-                        <div className="bg-white/10 rounded-xl p-2"><p className="font-black">{selectedReview.score}/10</p><p>Điểm</p></div>
-                        <div className="bg-white/10 rounded-xl p-2"><p className="font-black">{selectedReview.correct}</p><p>Đúng</p></div>
-                        <div className="bg-white/10 rounded-xl p-2"><p className="font-black">{selectedReview.wrong}</p><p>Sai</p></div>
-                        <div className="bg-white/10 rounded-xl p-2"><p className="font-black">{selectedReview.skip}</p><p>Bỏ qua</p></div>
+                    <div className="p-2.5 rounded-2xl bg-slate-900 text-white">
+                      <p className="text-caption font-extrabold uppercase text-yellow-300">{reviewSourceLabel[selectedReview.sourceType]}</p>
+                      <h5 className="font-extrabold text-sm mt-1">{selectedReview.title}</h5>
+                      <div className="grid grid-cols-4 gap-2 mt-3 text-center text-caption">
+                        <div className="bg-white/10 rounded-xl p-2"><p className="font-extrabold">{selectedReview.score}/10</p><p>Điểm</p></div>
+                        <div className="bg-white/10 rounded-xl p-2"><p className="font-extrabold">{selectedReview.correct}</p><p>Đúng</p></div>
+                        <div className="bg-white/10 rounded-xl p-2"><p className="font-extrabold">{selectedReview.wrong}</p><p>Sai</p></div>
+                        <div className="bg-white/10 rounded-xl p-2"><p className="font-extrabold">{selectedReview.skip}</p><p>Bỏ qua</p></div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-2xl text-[9px] font-black">
+                    <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-2xl text-caption font-extrabold">
                       {[
                         ["all", "Tất cả"],
                         ["correct", "Đúng"],
@@ -568,7 +577,7 @@ export default function ResultsAndRanking({
                           key={key}
                           type="button"
                           onClick={() => setReviewFilter(key as "all" | "correct" | "wrong" | "skipped")}
-                          className={`py-2 rounded-xl ${reviewFilter === key ? "bg-white text-red-800 shadow-sm" : "text-slate-500"}`}
+                          className={`min-h-11 py-2 rounded-xl ${reviewFilter === key ? "bg-white text-red-800" : "text-[var(--app-color-text-muted)]"}`}
                         >
                           {label}
                         </button>
@@ -577,53 +586,39 @@ export default function ResultsAndRanking({
 
                     <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
                       {filteredReviewAnswers.map(answer => (
-                        <div key={`${selectedReview.attemptId}-${answer.no}`} className="p-3 rounded-2xl border border-slate-100 bg-slate-50 text-xs space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="font-black text-slate-800 leading-relaxed">Câu {answer.no}. {answer.qtext}</p>
-                            <span className={`px-2 py-1 rounded-full text-[9px] font-black shrink-0 ${
-                              answer.ok ? "bg-green-100 text-green-800" : answer.chosen < 0 ? "bg-slate-200 text-slate-700" : "bg-red-100 text-red-800"
-                            }`}>
-                              {answer.ok ? "Đúng" : answer.chosen < 0 ? "Bỏ qua" : "Sai"}
-                            </span>
-                          </div>
-                          {answer.topic && <p className="text-[10px] text-slate-500 font-bold">Chủ đề: {answer.topic}</p>}
-                          <div className="grid grid-cols-1 gap-1.5 text-[11px]">
-                            <div className="p-2 rounded-xl bg-white border border-slate-100">
-                              <span className="font-black text-slate-500">Đã chọn: </span>
-                              <span className={answer.chosen < 0 ? "text-slate-400" : answer.ok ? "text-green-700 font-bold" : "text-red-700 font-bold"}>
-                                {answer.chosenText || "Chưa chọn"}
-                              </span>
-                            </div>
-                            <div className="p-2 rounded-xl bg-green-50 border border-green-100">
-                              <span className="font-black text-green-900">Đáp án đúng: </span>
-                              <span className="text-green-800 font-bold">{answer.correctText}</span>
-                            </div>
-                          </div>
-                          {answer.explain && (
-                            <p className="p-2 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-900 leading-relaxed">
-                              <span className="font-black">Giải thích: </span>{answer.explain}
-                            </p>
-                          )}
-                        </div>
+                        <ReviewAnswerCard
+                          key={`${selectedReview.attemptId}-${answer.no}`}
+                          index={answer.no}
+                          question={answer.qtext}
+                          selectedAnswer={answer.chosenText || "Chưa chọn"}
+                          correctAnswer={answer.correctText}
+                          explanation={answer.explain}
+                          isCorrect={answer.ok}
+                          isSkipped={answer.chosen < 0}
+                          topic={answer.topic}
+                          sourceType={reviewSourceLabel[selectedReview.sourceType]}
+                        />
                       ))}
                       {filteredReviewAnswers.length === 0 && (
-                        <p className="text-center text-[10px] text-slate-400 py-4">Không có câu hỏi phù hợp bộ lọc này.</p>
+                        <p className="text-center text-caption text-[var(--app-color-text-muted)] py-4">Hiện chưa có câu hỏi phù hợp với bộ lọc.</p>
                       )}
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-center text-[10px] text-slate-400 py-3">
-                Chưa có bài làm đã nộp trên thiết bị này. Sau khi nộp ôn trắc nghiệm, quiz bài học, thi thử hoặc kiểm tra chính thức, mục xem lại sẽ xuất hiện ở đây.
-              </p>
+              <EmptyState
+                variant="results"
+                title="Chưa có bài xem lại"
+                description="Sau khi nộp bài ôn tập, Thi thử hoặc Kiểm tra, nội dung xem lại sẽ xuất hiện ở đây."
+              />
             )}
           </div>
 
           {/* Interactive Simulated MD3 App settings & Dark mode */}
-          <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm space-y-3.5">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-2">
-              <Settings size={14} className="text-slate-500 shrink-0" />
+          <div className="pixel-surface space-y-3 p-3">
+            <h4 className="text-caption font-extrabold text-[var(--app-color-text-muted)] uppercase tracking-wider flex items-center gap-1.5 pb-1">
+              <Settings size={14} className="text-[var(--app-color-text-muted)] shrink-0" />
               <span>Thiết lập ứng dụng quân nhân</span>
             </h4>
 
@@ -631,45 +626,54 @@ export default function ResultsAndRanking({
               {/* Dark mode toggle */}
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <Moon size={14} className="text-slate-400" />
-                  <span className="font-bold text-slate-700">Chế độ hiển thị tối</span>
+                  <Moon size={14} className="text-[var(--app-color-text-muted)]" />
+                  <span className="font-bold text-[var(--app-color-text-secondary)]">Chế độ hiển thị tối</span>
                 </div>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={darkMode}
+                  aria-label="Chế độ hiển thị tối"
                   onClick={() => setDarkMode(!darkMode)}
-                  className={`w-9 h-5 rounded-full p-0.5 transition cursor-pointer ${darkMode ? "bg-emerald-800" : "bg-slate-200"}`}
+                  className="app-switch cursor-pointer"
                 >
-                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${darkMode ? "transform translate-x-4" : ""}`} />
+                  <div className="app-switch-thumb" />
                 </button>
               </div>
 
               {/* Notification toggle */}
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <Bell size={14} className="text-slate-400" />
-                  <span className="font-bold text-slate-700">Thông báo từ ban chỉ huy</span>
+                  <Bell size={14} className="text-[var(--app-color-text-muted)]" />
+                  <span className="font-bold text-[var(--app-color-text-secondary)]">Thông báo từ ban chỉ huy</span>
                 </div>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={notificationEnabled}
+                  aria-label="Thông báo từ ban chỉ huy"
                   onClick={() => setNotificationEnabled(!notificationEnabled)}
-                  className={`w-9 h-5 rounded-full p-0.5 transition cursor-pointer ${notificationEnabled ? "bg-emerald-800" : "bg-slate-200"}`}
+                  className="app-switch cursor-pointer"
                 >
-                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${notificationEnabled ? "transform translate-x-4" : ""}`} />
+                  <div className="app-switch-thumb" />
                 </button>
               </div>
 
               {/* Daily Reminder toggle */}
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <BookOpen size={14} className="text-slate-400" />
-                  <span className="font-bold text-slate-700">Nhắc nhở học tập hàng ngày</span>
+                  <BookOpen size={14} className="text-[var(--app-color-text-muted)]" />
+                  <span className="font-bold text-[var(--app-color-text-secondary)]">Nhắc nhở học tập hàng ngày</span>
                 </div>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={dailyReminder}
+                  aria-label="Nhắc nhở học tập hằng ngày"
                   onClick={() => setDailyReminder(!dailyReminder)}
-                  className={`w-9 h-5 rounded-full p-0.5 transition cursor-pointer ${dailyReminder ? "bg-emerald-800" : "bg-slate-200"}`}
+                  className="app-switch cursor-pointer"
                 >
-                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${dailyReminder ? "transform translate-x-4" : ""}`} />
+                  <div className="app-switch-thumb" />
                 </button>
               </div>
             </div>
@@ -677,22 +681,22 @@ export default function ResultsAndRanking({
 
         </div>
       ) : (
-        <div className="space-y-4 animate-fade-in" id="leaderboard-subtab-container">
+        <div className="space-y-3 motion-fade-in" id="leaderboard-subtab-container">
           
           {/* Header & Leaderboard scale scope switcher */}
-          <div className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm space-y-3">
+          <div className="pixel-surface space-y-2.5 p-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-black text-slate-800 uppercase">Bảng xếp hạng học tập</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">Xếp hạng theo kết quả học tập, ôn luyện và kiểm tra.</p>
+                <h3 className="text-xs font-extrabold text-[var(--app-color-text-primary)] uppercase">Bảng xếp hạng học tập</h3>
+                <p className="text-caption text-[var(--app-color-text-muted)] mt-0.5">Xếp hạng theo kết quả học tập, ôn luyện và kiểm tra.</p>
               </div>
 
               {/* Scope filter chips */}
-              <div className="flex gap-1 bg-slate-100 p-1 rounded-xl text-[9px] font-black uppercase tracking-wide">
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-xl text-caption font-extrabold uppercase tracking-wide">
                 <button
                   onClick={() => setLeaderboardScope("overall")}
                   className={`px-2.5 py-1.5 rounded-lg cursor-pointer transition ${
-                    leaderboardScope === "overall" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
+                    leaderboardScope === "overall" ? "bg-white text-[var(--app-color-text-primary)]" : "text-[var(--app-color-text-muted)]"
                   }`}
                 >
                   Cả đơn vị
@@ -700,7 +704,7 @@ export default function ResultsAndRanking({
                 <button
                   onClick={() => setLeaderboardScope("unit")}
                   className={`px-2.5 py-1.5 rounded-lg cursor-pointer transition ${
-                    leaderboardScope === "unit" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
+                    leaderboardScope === "unit" ? "bg-white text-[var(--app-color-text-primary)]" : "text-[var(--app-color-text-muted)]"
                   }`}
                 >
                   Đơn vị
@@ -710,68 +714,38 @@ export default function ResultsAndRanking({
           </div>
 
           {/* Leaderboard mobile scroll list */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {filteredLeaderboard.map((entry) => {
               const isSelf = entry.userId === user.id;
               
               return (
-                <div
+                <RankingRow
                   key={entry.userId}
-                  className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs transition ${
-                    isSelf
-                      ? "bg-amber-50 border-amber-300 shadow-sm font-bold scale-101"
-                      : "bg-white border-slate-100 hover:border-slate-200 shadow-sm"
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    
-                    {/* Rank Badge numbering indicator */}
-                    <span className={`w-7 h-7 rounded-xl font-black text-xs flex items-center justify-center shrink-0 border ${
-                      entry.rank === 1 ? "bg-yellow-400 border-yellow-500 text-slate-900" :
-                      entry.rank === 2 ? "bg-slate-200 border-slate-300 text-slate-700" :
-                      entry.rank === 3 ? "bg-amber-600 border-amber-700 text-white" : "bg-slate-50 border-slate-100 text-slate-400"
-                    }`}>
-                      {entry.rank}
-                    </span>
-
-                    {/* Member profile image placeholder */}
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-100 font-extrabold text-[10px] flex items-center justify-center shrink-0">
-                      {entry.fullName.split(" ").pop()?.substring(0, 2).toUpperCase()}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="font-black text-slate-800 flex items-center gap-1 text-[11px]">
-                        <span className="truncate">{entry.fullName}</span>
-                        {isSelf && (
-                          <span className="px-1.5 py-0.5 bg-amber-200 text-amber-950 rounded text-[7px] font-black uppercase shrink-0">
-                            Tôi
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-[9px] text-slate-400 truncate font-extrabold uppercase mt-0.5">
-                        {entry.unitName} • {entry.badge}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Points breakdown */}
-                  <div className="text-right shrink-0">
-                    <p className="font-black text-slate-800 text-xs">{entry.points} điểm</p>
-                    <p className="text-[9px] text-slate-400 font-extrabold uppercase mt-0.5">Hoàn thành: {entry.completionRate}%</p>
-                  </div>
-                </div>
+                  rank={entry.rank}
+                  fullName={entry.fullName}
+                  unit={entry.unitName}
+                  score={`${entry.points} điểm`}
+                  badge={entry.badge}
+                  completionRate={entry.completionRate}
+                  highlight={isSelf}
+                />
               );
             })}
             {!remoteLoading && (remoteLeaderboardEmpty || remoteFallback) && filteredLeaderboard.length === 0 && (
-              <div className="bg-white border border-slate-100 rounded-2xl p-5 text-center text-[10px] text-slate-500">
-                Chưa có dữ liệu xếp hạng cho kỳ thi đã chọn.
-              </div>
+              <EmptyState
+                variant="ranking"
+                title="Chưa có kết quả xếp hạng"
+                description="Hiện chưa có kết quả xếp hạng cho nội dung đã chọn."
+                className="bg-white"
+              />
             )}
           </div>
 
         </div>
       )}
 
-    </div>
+        </AppStack>
+      </AppContainer>
+    </AppPage>
   );
 }

@@ -29,9 +29,9 @@ export const CDS_LEGACY_MEMBER_ID = "cds_legacy_member";
 export const legacyUnits: Unit[] = [
   {
     id: CDS_LEGACY_UNIT_ID,
-    name: "Đơn vị CDS/PTKV",
+    name: "Đơn vị học tập",
     type: "legacy_static",
-    description: "Đơn vị trình diễn dùng cho bản Netlify static kế thừa CDS"
+    description: "Đơn vị tham gia học tập và kiểm tra"
   }
 ];
 
@@ -39,7 +39,7 @@ export const legacyUsers: User[] = [
   {
     id: CDS_LEGACY_MEMBER_ID,
     fullName: "Đồng chí học viên",
-    email: "hocvien.cds@example.test",
+    email: "hocvien@ptkv.vn",
     phone: "",
     avatar: "",
     unitId: CDS_LEGACY_UNIT_ID,
@@ -52,7 +52,7 @@ export const legacyUsers: User[] = [
   {
     id: CDS_LEGACY_ADMIN_ID,
     fullName: "Cán bộ quản trị",
-    email: "admin.cds@example.test",
+    email: "quantri@ptkv.vn",
     phone: "",
     avatar: "",
     unitId: CDS_LEGACY_UNIT_ID,
@@ -69,8 +69,8 @@ export const legacyTopics: LearningTopic[] = [
     id: CDS_LEGACY_TOPIC_ID,
     title: "Tài liệu học tập chính trị, pháp luật và CTĐ, CTCT",
     category: TopicCategory.POLITICAL,
-    description: "Port từ luồng Học tập/Tài liệu của CDS: nội dung chính trị, pháp luật, điều lệnh và công tác Đảng, công tác chính trị.",
-    objective: "Nắm chắc các nội dung giáo dục chính trị, pháp luật cơ bản; làm cơ sở ôn trắc nghiệm, thi thử và kiểm tra nhận thức.",
+    description: "Nội dung chính trị, pháp luật, điều lệnh và công tác Đảng, công tác chính trị.",
+    objective: "Nắm chắc nội dung giáo dục chính trị, pháp luật cơ bản; làm cơ sở ôn trắc nghiệm, Thi thử và Kiểm tra.",
     content: [
       "1. Chủ nghĩa Mác - Lênin, tư tưởng Hồ Chí Minh và đường lối quân sự của Đảng.",
       "2. Bản chất, truyền thống, kỷ luật và nguyên tắc tổ chức của Quân đội nhân dân Việt Nam.",
@@ -84,11 +84,10 @@ export const legacyTopics: LearningTopic[] = [
     deadline: nextMonth,
     status: LearningStatus.IN_PROGRESS,
     difficulty: "Trung bình" as LearningTopic["difficulty"],
-    tags: ["CDS", "Học tập", "Tài liệu học tập", "Phổ biến giáo dục pháp luật"],
+    tags: ["Học tập", "Tài liệu học tập", "Phổ biến giáo dục pháp luật"],
     references: [
-      "Nguồn CDS: Hoctap.html, study.html, materials.html, js/materials.plus.js",
-      "Nguồn câu hỏi: cds/data/questions.json",
-      "Cấu hình legacy được truyền qua VITE_LEGACY_* khi triển khai Netlify"
+      "Tài liệu giáo dục chính trị và pháp luật",
+      "Ngân hàng câu hỏi ôn tập"
     ],
     createdBy: CDS_LEGACY_ADMIN_ID,
     createdAt: now,
@@ -99,11 +98,11 @@ export const legacyTopics: LearningTopic[] = [
     id: "cds_legacy_topic_policy_lookup",
     title: "Phổ biến giáo dục pháp luật / Tra cứu văn bản chính sách",
     category: TopicCategory.LEGAL,
-    description: "Luồng tin chính sách mới và tra cứu văn bản từ tintuc24.html được đưa vào mobile shell.",
+    description: "Tin chính sách mới và công cụ tra cứu văn bản phục vụ học tập.",
     objective: "Giúp cán bộ, chiến sĩ tiếp cận nhanh chính sách mới, văn bản pháp luật và nội dung tuyên truyền phổ biến giáo dục pháp luật.",
     content: [
       "Màn hình Tin tức cung cấp các nhóm: Tin theo thời gian, Tin trong ngày, Tin chính trị ĐCSVN, Chính sách mới và Tra cứu văn bản chính sách.",
-      "Trong Netlify static mode, dữ liệu tin tức dùng Apps Script qua VITE_NEWS_API_URL (hoặc VITE_LEGACY_CDS_API_URL dự phòng); nếu không tải được sẽ dùng dữ liệu fallback an toàn."
+      "Nội dung được cập nhật từ nguồn tin tức và văn bản chính sách đã cấu hình."
     ].join("\n\n"),
     contentType: "document",
     estimatedMinutes: 20,
@@ -111,7 +110,7 @@ export const legacyTopics: LearningTopic[] = [
     status: LearningStatus.NOT_STARTED,
     difficulty: "Dễ" as LearningTopic["difficulty"],
     tags: ["Tin tức", "Chính sách mới", "Tra cứu văn bản chính sách"],
-    references: ["Nguồn CDS: tintuc24.html, js/news.js"],
+    references: ["Nguồn tin tức và văn bản chính sách"],
     createdBy: CDS_LEGACY_ADMIN_ID,
     createdAt: now,
     updatedAt: now,
@@ -153,7 +152,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [1],
     explanation: "Chủ nghĩa Mác - Lênin gồm triết học Mác - Lênin, kinh tế chính trị Mác - Lênin và chủ nghĩa xã hội khoa học.",
     difficulty: "Dễ" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["Ôn trắc nghiệm", "Chính trị"]
   },
   {
@@ -170,7 +169,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [0],
     explanation: "Tư tưởng Hồ Chí Minh là hệ thống quan điểm toàn diện, sâu sắc về những vấn đề cơ bản của cách mạng Việt Nam.",
     difficulty: "Trung bình" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["Ôn trắc nghiệm", "Tư tưởng Hồ Chí Minh"]
   },
   {
@@ -182,7 +181,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [2],
     explanation: "Đường lối quân sự của Đảng gắn xây dựng nền quốc phòng toàn dân với nhiệm vụ bảo vệ Tổ quốc.",
     difficulty: "Trung bình" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["Đường lối quân sự", "Kiểm tra nhận thức"]
   },
   {
@@ -194,7 +193,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [2],
     explanation: "Quân đội nhân dân Việt Nam mang bản chất giai cấp công nhân, tính nhân dân và tính dân tộc sâu sắc.",
     difficulty: "Trung bình" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["Quân đội", "Chính trị"]
   },
   {
@@ -206,7 +205,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [0],
     explanation: "Phương châm cơ bản, thiết thực, vững chắc bảo đảm huấn luyện sát nhiệm vụ, đối tượng và địa bàn.",
     difficulty: "Dễ" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["Huấn luyện", "Ôn tập"]
   },
   {
@@ -218,7 +217,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [1],
     explanation: "Công tác tư tưởng là một nội dung quan trọng trong công tác Đảng, công tác chính trị.",
     difficulty: "Dễ" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["CTĐ", "CTCT"]
   },
   {
@@ -230,7 +229,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [0],
     explanation: "Kỷ luật quân đội yêu cầu sự tự giác, nghiêm minh, thống nhất ý chí và hành động.",
     difficulty: "Dễ" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["Kỷ luật", "Pháp luật"]
   },
   {
@@ -242,7 +241,7 @@ export const legacyQuestions: Question[] = [
     correctAnswers: [0],
     explanation: "Tập trung dân chủ là nguyên tắc tổ chức cơ bản, bảo đảm lãnh đạo tập trung, thống nhất.",
     difficulty: "Trung bình" as Question["difficulty"],
-    reference: "cds/data/questions.json",
+    reference: "Tài liệu ôn tập chính trị và pháp luật",
     tags: ["Tổ chức", "Quân đội"]
   }
 ];
@@ -251,7 +250,7 @@ export const legacyExams: Exam[] = [
   {
     id: "cds_official_awareness_exam",
     title: "Kiểm tra nhận thức chính trị - pháp luật",
-    description: "Luồng kiểm tra chính thức/sát hạch từ CDS: kiemtra.html, lambai.html, exam.html.",
+    description: "Bài kiểm tra tổng hợp nội dung chính trị và pháp luật.",
     topicIds: [CDS_LEGACY_TOPIC_ID],
     durationMinutes: 20,
     questionCount: 8,
@@ -303,8 +302,8 @@ export const legacyNews: News[] = [
     id: "cds_news_timeline",
     title: "Tin theo thời gian: cập nhật nhiệm vụ giáo dục chính trị trong ngày",
     category: "Tin theo thời gian",
-    summary: "Luồng tin nhanh kế thừa từ tintuc24.html để cán bộ, chiến sĩ theo dõi nội dung mới nhất.",
-    content: "Bản mobile shell hiển thị nhóm Tin theo thời gian, ưu tiên kết nối Apps Script qua VITE_NEWS_API_URL và chỉ dùng dữ liệu fallback khi nguồn trực tuyến lỗi hoặc rỗng.",
+    summary: "Tin nhanh giúp cán bộ, chiến sĩ theo dõi nội dung mới nhất.",
+    content: "Tin theo thời gian tổng hợp những nội dung mới phục vụ học tập, công tác và sinh hoạt đơn vị.",
     visibility: "public",
     status: "published",
     authorId: CDS_LEGACY_ADMIN_ID,
@@ -327,7 +326,7 @@ export const legacyNews: News[] = [
     id: "cds_news_party",
     title: "Tin chính trị ĐCSVN: xây dựng Đảng, xây dựng đơn vị vững mạnh",
     category: "Tin chính trị ĐCSVN",
-    summary: "Nhóm tin chính trị của Đảng được port từ luồng tintuc24.html.",
+    summary: "Tin chính trị của Đảng phục vụ học tập và sinh hoạt đơn vị.",
     content: "Nội dung phục vụ giáo dục chính trị, nâng cao nhận thức về công tác xây dựng Đảng và nhiệm vụ bảo vệ Tổ quốc.",
     visibility: "public",
     status: "published",
@@ -340,7 +339,7 @@ export const legacyNews: News[] = [
     title: "Chính sách mới: cập nhật văn bản, chế độ, tiêu chuẩn liên quan quân nhân",
     category: "Chính sách mới",
     summary: "Kênh phổ biến chính sách mới và văn bản cần biết.",
-    content: "Khi triển khai thực tế, nhóm này có thể lấy dữ liệu qua Apps Script legacy. Trong bản port static, dữ liệu fallback bảo đảm màn hình không rỗng.",
+    content: "Nội dung giới thiệu những chính sách, chế độ và văn bản mới cần quan tâm.",
     visibility: "public",
     status: "published",
     authorId: CDS_LEGACY_ADMIN_ID,
@@ -352,7 +351,7 @@ export const legacyNews: News[] = [
     title: "Phổ biến giáo dục pháp luật: chấp hành kỷ luật, điều lệnh, an toàn đơn vị",
     category: "Phổ biến giáo dục pháp luật",
     summary: "Nội dung pháp luật, điều lệnh và kỷ luật quân đội phục vụ học tập thường xuyên.",
-    content: "Kế thừa mục tiêu phổ biến pháp luật của CDS; hỗ trợ tra cứu, đọc nhanh và liên kết sang học tập/ôn luyện.",
+    content: "Nội dung hỗ trợ tra cứu, đọc nhanh và liên kết với hoạt động học tập, ôn luyện.",
     visibility: "public",
     status: "published",
     authorId: CDS_LEGACY_ADMIN_ID,
@@ -363,8 +362,8 @@ export const legacyNews: News[] = [
     id: "cds_policy_lookup",
     title: "Tra cứu văn bản chính sách: điều lệnh, chế độ, quy định liên quan",
     category: "Tra cứu văn bản chính sách",
-    summary: "Điểm vào cho nhu cầu tìm kiếm văn bản chính sách trong mobile shell.",
-    content: "Người dùng có thể tìm theo từ khóa. Nguồn tra cứu runtime được cấu hình qua VITE_NEWS_API_URL hoặc VITE_LEGACY_CDS_API_URL.",
+    summary: "Tra cứu nhanh văn bản chính sách theo nhu cầu.",
+    content: "Đồng chí có thể tìm văn bản theo từ khóa, loại văn bản và thời gian ban hành.",
     visibility: "public",
     status: "published",
     authorId: CDS_LEGACY_ADMIN_ID,
@@ -379,14 +378,14 @@ export const legacyPolicyDocs = [
     title: "Quy định chấp hành kỷ luật và điều lệnh trong đơn vị",
     category: "Tra cứu văn bản chính sách",
     summary: "Tài liệu tham khảo phục vụ phổ biến giáo dục pháp luật và rèn luyện kỷ luật.",
-    source: "CDS legacy policy/search workflow"
+    source: "Kho văn bản chính sách"
   },
   {
     id: "cds_policy_002",
     title: "Chính sách, chế độ đối với quân nhân trong học tập, công tác",
     category: "Chính sách mới",
-    summary: "Mẫu dữ liệu fallback để màn hình chính sách không rỗng khi chưa cấu hình API legacy.",
-    source: "CDS tintuc24.html"
+    summary: "Thông tin tham khảo về chính sách, chế độ trong học tập và công tác.",
+    source: "Kho văn bản chính sách"
   }
 ];
 
@@ -396,7 +395,7 @@ export const legacyRankingEntries: RankingEntry[] = [
     userId: CDS_LEGACY_MEMBER_ID,
     fullName: "Đồng chí học viên",
     unitId: CDS_LEGACY_UNIT_ID,
-    unitName: "Đơn vị CDS/PTKV",
+    unitName: "Đơn vị học tập",
     points: 95,
     completionRate: 70
   },
@@ -405,7 +404,7 @@ export const legacyRankingEntries: RankingEntry[] = [
     userId: "cds_legacy_member_2",
     fullName: "Đồng chí ôn luyện",
     unitId: CDS_LEGACY_UNIT_ID,
-    unitName: "Đơn vị CDS/PTKV",
+    unitName: "Đơn vị học tập",
     points: 82,
     completionRate: 62
   }
@@ -416,9 +415,9 @@ export const legacyAuditLogs: AuditLog[] = [
     id: "cds_audit_login",
     userId: CDS_LEGACY_ADMIN_ID,
     userName: "Cán bộ quản trị",
-    action: "legacy_admin_list_audit",
-    entityType: "legacy_apps_script",
-    entityId: "cds_admin",
+    action: "Xem nhật ký quản trị",
+    entityType: "Hoạt động quản trị",
+    entityId: "Quản trị",
     metadata: { source: "admin.html" },
     createdAt: now
   }
@@ -427,19 +426,19 @@ export const legacyAuditLogs: AuditLog[] = [
 export const legacyReviewData = [
   {
     id: "cds_review_awareness",
-    title: "Xem lại & Giải thích - Kiểm tra nhận thức",
+    title: "Xem lại và giải thích - Kiểm tra",
     sourcePage: "review.html",
     description: "Hiển thị câu đã làm, đáp án đã chọn, đáp án đúng và giải thích theo phạm vi bài nộp."
   },
   {
     id: "cds_review_practice",
-    title: "Xem lại & Giải thích - Ôn trắc nghiệm",
+    title: "Xem lại và giải thích - Ôn trắc nghiệm",
     sourcePage: "review.practice.html",
-    description: "Luồng xem lại gói ôn tập/luyện tập kế thừa từ localStorage của CDS."
+    description: "Xem lại câu trả lời, đáp án đúng và nội dung giải thích của bài ôn tập."
   },
   {
     id: "cds_review_try",
-    title: "Xem lại & Giải thích - Thi thử",
+    title: "Xem lại và giải thích - Thi thử",
     sourcePage: "review-try.html",
     description: "Luồng xem lại bài thi thử, tập trung giải thích các câu sai."
   }

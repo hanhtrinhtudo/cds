@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Send, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, ChevronDown, Sparkles, Trash2 } from "lucide-react";
 import { AIChatMessage, LearningStatus, LearningTopic, User } from "../types";
 import {
   aiService,
@@ -9,12 +9,17 @@ import {
   toPoliticalAIUser
 } from "../services/aiService";
 import { reviewService } from "../services/reviewService";
+import { AppCaption, AppHeading, IconButton } from "./ui";
+import { ChatBubble, ChatComposer } from "./product";
+import { AppBottomBar, AppPage, AppScrollable, AppWorkspace } from "./layout";
+import { AnalyticsEventPayload, AnalyticsEventType } from "../services/analyticsService";
 
 interface AITutorProps {
   user: User;
   topics: LearningTopic[];
   activeTopicArg: any;
   onClearTopicArg: () => void;
+  onAnalyticsEvent?: (eventType: AnalyticsEventType, event?: Partial<AnalyticsEventPayload>) => void;
 }
 
 type TutorMessage = AIChatMessage & {
@@ -23,15 +28,15 @@ type TutorMessage = AIChatMessage & {
 };
 
 const FAILURE_MESSAGE =
-  "AI Chính trị viên chưa sẵn sàng. Đồng chí vẫn có thể học tài liệu, làm quiz và xem lại đáp án.";
+  "AI Chính trị viên chưa sẵn sàng. Đồng chí vẫn có thể học tài liệu, làm bài ôn tập và xem lại đáp án.";
 
 const welcomeMessage = (user: User): TutorMessage => ({
   id: "welcome",
   userId: user.id,
   role: "model",
   content:
-    `Xin chào đồng chí ${user.fullName}.\n` +
-    "Tôi sẵn sàng hỗ trợ tóm tắt tài liệu, giải thích nội dung khó và tạo câu hỏi ôn tập.",
+    "Xin chào đồng chí.\n" +
+    "AI Chính trị viên sẵn sàng hỗ trợ học tập, ôn luyện và giải đáp.",
   createdAt: new Date().toISOString()
 });
 
@@ -44,7 +49,7 @@ function renderInlineMarkdown(text: string) {
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={index} className="font-black">
+        <strong key={index} className="font-extrabold">
           {part.slice(2, -2)}
         </strong>
       );
@@ -58,14 +63,18 @@ export default function AITutor({
   user,
   topics,
   activeTopicArg,
-  onClearTopicArg
+  onClearTopicArg,
+  onAnalyticsEvent
 }: AITutorProps) {
-  const [messages, setMessages] = useState<TutorMessage[]>([welcomeMessage(user)]);
+  const [messages, setMessages] = useState<TutorMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const conversationRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const forceScrollRef = useRef(false);
   const gatewayConfigured = aiService.isConfigured();
 
   const selectedTopic = useMemo(
@@ -89,9 +98,38 @@ export default function AITutor({
     onClearTopicArg();
   }, [activeTopicArg, onClearTopicArg, topics]);
 
+  const hasUserMessage = useMemo(
+    () => messages.some(message => message.role === "user"),
+    [messages]
+  );
+
+  const handleConversationScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const viewport = event.currentTarget;
+    isNearBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 140;
+  };
+
+  const scrollConversationToBottom = (behavior: ScrollBehavior = "smooth") => {
+    const scroll = () => {
+      messagesEndRef.current?.scrollIntoView({
+        behavior,
+        block: "end"
+      });
+    };
+
+    window.requestAnimationFrame(scroll);
+    window.setTimeout(scroll, 0);
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages, loading]);
+    if (!forceScrollRef.current && !isNearBottomRef.current) return;
+
+    const forced = forceScrollRef.current;
+    scrollConversationToBottom(forced ? "auto" : "smooth");
+    forceScrollRef.current = false;
+    isNearBottomRef.current = true;
+
+    return undefined;
+  }, [messages.length, loading]);
 
   const presets: Array<{ label: string; mode: PoliticalAIMode; prompt: string }> = [
     {
@@ -105,9 +143,19 @@ export default function AITutor({
       prompt: "Giải thích nội dung khó hiểu bằng ngôn ngữ dễ hiểu và liên hệ thực tiễn tại đơn vị."
     },
     {
-      label: "Tạo câu hỏi",
+      label: "Ôn tập",
       mode: "DRILL",
       prompt: "Tạo bộ câu hỏi ôn tập từ tài liệu đang chọn."
+    },
+    {
+      label: "Tra cứu",
+      mode: "POLICY",
+      prompt: "Tra cứu và giải thích nội dung văn bản, chính sách liên quan đến câu hỏi của tôi."
+    },
+    {
+      label: "Kế hoạch",
+      mode: "STUDY_PLAN",
+      prompt: "Lập kế hoạch học tập ngắn ngày dựa trên tài liệu và kết quả ôn tập gần đây."
     }
   ];
 
@@ -251,11 +299,33 @@ export default function AITutor({
       createdAt: new Date().toISOString()
     };
 
+    forceScrollRef.current = true;
     setMessages(previous => [...previous, userMessage]);
     setLoading(true);
+    scrollConversationToBottom("auto");
+    onAnalyticsEvent?.("AI_PROMPT", {
+      resourceType: "ai",
+      resourceId: selectedTopic?.id,
+      resourceTitle: selectedTopic?.title,
+      category: selectedTopic?.category,
+      metadata: { mode: requestMode, hasMaterial: Boolean(selectedTopic), hasReview: Boolean(recentReview) }
+    });
 
     try {
       const response = await requestAI(buildRequest(question, requestMode));
+      onAnalyticsEvent?.("AI_RESPONSE", {
+        resourceType: "ai",
+        resourceId: selectedTopic?.id,
+        resourceTitle: selectedTopic?.title,
+        category: selectedTopic?.category,
+        metadata: {
+          mode: requestMode,
+          sourceCount: response.sources?.length || 0,
+          warningCount: response.warnings?.length || 0,
+          model: response.model,
+          provider: response.provider
+        }
+      });
 
       setMessages(previous => [
         ...previous,
@@ -279,8 +349,9 @@ export default function AITutor({
   const clearHistory = () => {
     if (!window.confirm("Đồng chí có muốn xóa lịch sử trò chuyện trên màn hình này?")) return;
 
-    setMessages([welcomeMessage(user)]);
+    setMessages([]);
     setErrorMsg("");
+    forceScrollRef.current = true;
   };
 
   const renderText = (text: string) =>
@@ -289,7 +360,7 @@ export default function AITutor({
 
       if (/^[-*]\s/.test(line)) {
         return (
-          <li key={index} className="ml-4 list-disc text-sm leading-relaxed mt-1">
+          <li key={index} className="ml-4 mt-1 list-disc text-body leading-relaxed">
             {renderInlineMarkdown(line.slice(2))}
           </li>
         );
@@ -297,204 +368,136 @@ export default function AITutor({
 
       if (/^\d+\.\s/.test(line)) {
         return (
-          <p key={index} className="text-sm leading-relaxed mt-1 font-semibold">
+          <p key={index} className="mt-1 text-body font-semibold leading-relaxed">
             {renderInlineMarkdown(line)}
           </p>
         );
       }
 
       return (
-        <p key={index} className="text-sm leading-relaxed mt-1 whitespace-pre-wrap">
+        <p key={index} className="mt-1 whitespace-pre-wrap text-body leading-relaxed">
           {renderInlineMarkdown(line)}
         </p>
       );
     });
 
   return (
-    <div
-      className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-128px)] min-h-[500px]"
-      id="ai-chat-screen-layout"
-    >
-      <div className="bg-gradient-to-r from-red-800 to-red-950 px-3.5 py-2.5 flex items-center justify-between text-white shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="bg-white/10 p-1.5 rounded-full border border-white/20 shrink-0">
-            <Sparkles size={16} className="text-yellow-300" />
-          </div>
+    <AppPage variant="workspace" className="ai-workspace flex h-full min-h-0 flex-col overflow-hidden bg-white" id="ai-chat-screen-layout">
+      <AppWorkspace
+        className="h-full min-h-0 overflow-hidden bg-white"
+        topSlot={
+          <>
+            <div className="pixel-toolbar ai-toolbar-compact flex shrink-0 items-center justify-between gap-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-700 text-white">
+                  <Sparkles size={14} className="text-yellow-300" />
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-white bg-[var(--app-color-brand-primary)]" />
+                </div>
 
-          <div className="min-w-0">
-            <h3 className="text-sm font-black leading-tight truncate">
-              AI Chính trị viên
-            </h3>
-            <p className="text-[11px] text-red-100 truncate">
-              Hỗ trợ học tập, ôn luyện và tra cứu chính sách
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={clearHistory}
-          className="p-2 text-red-100 hover:text-white hover:bg-white/10 rounded-xl shrink-0"
-          title="Xóa lịch sử"
-        >
-          <Trash2 size={17} />
-        </button>
-      </div>
-
-      <div className="px-2.5 py-2 border-b border-slate-100 bg-white space-y-1.5 shrink-0">
-        {!gatewayConfigured && (
-          <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-900">
-            AI Chính trị viên chưa được kích hoạt trên bản triển khai này.
-          </div>
-        )}
-
-        <label className="block text-[10px] font-black tracking-wide text-slate-500">
-          Tài liệu
-          <select
-            value={selectedTopicId}
-            onChange={event => setSelectedTopicId(event.target.value)}
-            className="mt-1 w-full h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-semibold normal-case text-slate-700"
-          >
-            <option value="">Không chọn tài liệu</option>
-            {topics.map(topic => (
-              <option key={topic.id} value={topic.id}>
-                {topic.title}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {recentReview && (
-          <p className="text-[10px] text-slate-500 leading-snug line-clamp-1">
-            Có thể hỏi AI giải thích bài đã nộp gần nhất: {recentReview.title}
-          </p>
-        )}
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 bg-slate-50/60 scrollbar-none" id="ai-messages-viewport">
-        {messages.map(message => {
-          const isAI = message.role === "model";
-          const isWelcome = message.id === "welcome";
-
-          return (
-            <div
-              key={message.id}
-              className={`flex gap-2.5 max-w-[96%] ${
-                isAI ? "mr-auto" : "ml-auto flex-row-reverse"
-              }`}
-            >
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${
-                  isAI ? "bg-red-700" : "bg-slate-800"
-                } text-white`}
-              >
-                {isAI ? "AI" : "ĐC"}
+                <div className="min-w-0">
+                  <AppHeading level="h3" variant="title" truncate className="leading-none">
+                    AI Chính trị viên
+                  </AppHeading>
+                  <AppCaption className="text-[var(--app-color-text-muted)] leading-none">Sẵn sàng hỗ trợ</AppCaption>
+                </div>
               </div>
 
-              <div
-                className={`p-2.5 rounded-2xl border shadow-sm max-w-full ${
-                  isAI
-                    ? "bg-white border-slate-100 text-slate-800 rounded-tl-none"
-                    : "bg-red-700 border-red-800 text-white rounded-tr-none"
-                } ${isWelcome ? "max-h-[116px] overflow-hidden" : ""}`}
-              >
-                {renderText(message.content)}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <label className="relative block">
+                  <span className="sr-only">Tài liệu đang học</span>
+                  <select
+                    value={selectedTopicId}
+                    onChange={event => setSelectedTopicId(event.target.value)}
+                    className="h-10 max-w-[104px] appearance-none rounded-full border border-[var(--app-color-border)] bg-slate-50 py-1 pl-3 pr-7 text-xs font-bold text-[var(--app-color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-red-700"
+                    aria-label="Tài liệu đang học"
+                  >
+                    <option value="">Tài liệu</option>
+                    {topics.map(topic => (
+                      <option key={topic.id} value={topic.id}>
+                        {topic.title}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={13} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--app-color-text-muted)]" />
+                </label>
 
-                {isAI && message.sources && message.sources.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-slate-100 space-y-1">
-                    <p className="text-[10px] font-black uppercase text-slate-400">
-                      Nguồn tham khảo
-                    </p>
-
-                    {message.sources.map((source, index) =>
-                      source.url ? (
-                        <a
-                          key={`${source.type}-${source.id || index}`}
-                          href={source.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block text-xs font-bold text-red-700 underline break-words"
-                        >
-                          {source.title}
-                        </a>
-                      ) : (
-                        <p
-                          key={`${source.type}-${source.id || index}`}
-                          className="text-xs text-slate-600"
-                        >
-                          {source.title}
-                        </p>
-                      )
-                    )}
-                  </div>
-                )}
-
-                {isAI &&
-                  message.warnings?.map((warning, index) => (
-                    <p key={index} className="mt-2 text-[10px] text-amber-800">
-                      {warning}
-                    </p>
-                  ))}
+                <IconButton
+                  onClick={clearHistory}
+                  variant="ghost"
+                  size="sm"
+                  icon={<Trash2 size={16} />}
+                  className="text-[var(--app-color-text-muted)] hover:text-red-700 hover:bg-red-50 shrink-0"
+                  title="Xóa lịch sử"
+                  aria-label="Xóa lịch sử trò chuyện"
+                />
               </div>
             </div>
-          );
-        })}
 
-        {loading && (
-          <div className="text-xs font-bold text-slate-500 bg-white border border-slate-100 rounded-2xl p-3 w-fit">
-            AI Chính trị viên đang tổng hợp...
-          </div>
-        )}
+            {!gatewayConfigured && (
+              <div className="px-3 py-1.5 border-b border-amber-100 bg-amber-50 text-xs font-semibold text-amber-800">
+                AI Chính trị viên hiện chưa được kích hoạt.
+              </div>
+            )}
+          </>
+        }
+        bottomSlot={
+          <AppBottomBar safeArea={false} elevated={false} className="shrink-0 border-t border-[var(--app-color-divider)]">
+            <ChatComposer
+              value={inputText}
+              onChange={setInputText}
+              onSubmit={handleSendMessage}
+              disabled={!gatewayConfigured}
+              loading={loading}
+              presets={hasUserMessage ? [] : presets.map(preset => ({ label: preset.label, value: preset.label }))}
+              showDisclaimer={!hasUserMessage}
+              onPresetClick={preset => {
+                const match = presets.find(item => item.label === preset.label);
+                if (match) void handleSendMessage(undefined, match.prompt, match.mode);
+              }}
+            />
+          </AppBottomBar>
+        }
+      >
+        <AppScrollable
+          ref={conversationRef}
+          hideScrollbar
+          onScroll={handleConversationScroll}
+          className="ai-conversation-scroll overflow-x-hidden bg-white px-2.5 pb-2 pt-2"
+          id="ai-messages-viewport"
+        >
+          {!hasUserMessage && messages.length === 0 && (
+            <div className="mx-auto flex min-h-[42%] max-w-[84%] flex-col items-center justify-center text-center">
+              <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-700 text-white">
+                <Sparkles size={16} className="text-yellow-300" />
+              </div>
+              <p className="text-body font-semibold leading-relaxed text-[var(--app-color-text-primary)]">
+                Xin chào đồng chí. AI Chính trị viên sẵn sàng hỗ trợ học tập, ôn luyện và giải đáp.
+              </p>
+            </div>
+          )}
 
-        {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-2xl flex items-start gap-2">
-            <AlertCircle size={16} className="shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className="px-2.5 py-1.5 bg-white border-t border-slate-100 shrink-0">
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-          {presets.map(preset => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => void handleSendMessage(undefined, preset.prompt, preset.mode)}
-              disabled={loading || !gatewayConfigured}
-              className="h-8 px-3 bg-red-50 border border-red-100 rounded-full text-[10px] font-black text-red-800 disabled:opacity-50 whitespace-nowrap shrink-0"
-            >
-              {preset.label}
-            </button>
+          {messages.map(message => (
+            <ChatBubble
+              key={message.id}
+              role={message.role === "model" ? "model" : "user"}
+              content={renderText(message.content)}
+              sources={message.sources}
+              warnings={message.warnings}
+            />
           ))}
-        </div>
-      </div>
 
-      <div className="p-2.5 bg-white border-t border-slate-100 shrink-0 space-y-1">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <input
-            value={inputText}
-            onChange={event => setInputText(event.target.value)}
-            disabled={loading || !gatewayConfigured}
-            placeholder="Hỏi AI về tài liệu, câu hỏi hoặc văn bản..."
-            className="flex-1 h-11 px-4 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-700 min-w-0"
-          />
+          {loading && <ChatBubble role="model" content={null} loading />}
 
-          <button
-            type="submit"
-            disabled={!inputText.trim() || loading || !gatewayConfigured}
-            className="h-11 w-11 flex items-center justify-center bg-red-700 disabled:opacity-40 text-white rounded-2xl shrink-0"
-            id="btn-ai-send"
-          >
-            <Send size={18} />
-          </button>
-        </form>
+          {errorMsg && (
+            <div className="mr-auto flex max-w-[94%] items-start gap-2 rounded-2xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">
+              <AlertCircle size={15} className="mt-0.5 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
 
-        <p className="text-[9px] text-slate-400 text-center italic px-1 leading-tight truncate">
-          AI hỗ trợ học tập; cần đối chiếu văn bản chính thức khi áp dụng.
-        </p>
-      </div>
-    </div>
+          <div ref={messagesEndRef} />
+        </AppScrollable>
+      </AppWorkspace>
+    </AppPage>
   );
 }

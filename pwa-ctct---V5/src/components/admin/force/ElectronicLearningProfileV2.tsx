@@ -1,0 +1,67 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { LearningProgress, LearningTopic, User } from "../../../types";
+import { AnalyticsEventRecord, AnalyticsSummary, PEQIResult, analyticsService } from "../../../services/analyticsService";
+import { apiClient } from "../../../services/apiClient";
+import { Alert, AppCaption, AppHeading, Badge, Button, EmptyState, Skeleton } from "../../ui";
+import { CaseActionType, EducationCase, EducationCasePanel, EducationCaseSeverity, EducationCaseStatus, caseActionLabel, createCaseDraft } from "../cases";
+import LearnerTimeline from "./LearnerTimeline";
+import ProfileAIUsage from "./ProfileAIUsage";
+import ProfileLearningProgress from "./ProfileLearningProgress";
+import ProfileNewsViews from "./ProfileNewsViews";
+import ProfileQuizHistory from "./ProfileQuizHistory";
+import ProfileReviewHistory from "./ProfileReviewHistory";
+import { eventTime, roleLabel, statusLabel } from "./forceUtils";
+
+type RiskSeverity = "ok" | "info" | "warning" | "danger";
+interface RiskItem { id: string; label: string; severity: RiskSeverity; active: boolean; evidence: string; recommendation: string; }
+
+const riskVariant = (severity: RiskSeverity) => severity === "danger" ? "danger" : severity === "warning" ? "warning" : severity === "info" ? "info" : "success";
+
+const deriveRisks = (peqi: PEQIResult | null, summary: AnalyticsSummary, events: AnalyticsEventRecord[]): RiskItem[] => {
+  const quiz = events.filter(event => event.eventType === "QUIZ_SUBMIT" && typeof event.score === "number");
+  const lowQuiz = quiz.filter(event => Number(event.score) < 6);
+  const reviews = events.filter(event => ["REVIEW_OPEN", "REVIEW_COMPLETE"].includes(event.eventType));
+  const news = events.filter(event => event.eventType === "NEWS_VIEW");
+  const fast = events.filter(event => event.eventType === "MARK_COMPLETE" && Number(event.durationSeconds || 0) > 0 && Number(event.durationSeconds) < 60);
+  const last = events[0]?.createdAt ? new Date(events[0].createdAt).getTime() : 0;
+  const inactiveDays = last ? Math.floor((Date.now() - last) / 86400000) : undefined;
+  const flag = (id: string) => Boolean(peqi?.riskFlags?.includes(id));
+  const items: RiskItem[] = [
+    { id: "LOW_PEQI", label: "PEQI thấp", active: flag("LOW_PEQI") || (peqi ? peqi.score < 65 : false), severity: peqi && peqi.score < 50 ? "danger" : "warning", evidence: peqi ? `PEQI hiện tại ${peqi.score} · ${peqi.level}` : "Chưa có dữ liệu PEQI", recommendation: "Rà soát toàn bộ tiến độ và kết quả gần đây" },
+    { id: "LOW_SCORE", label: "Điểm thấp", active: flag("LOW_SCORE") || lowQuiz.length > 0, severity: lowQuiz.length >= 3 ? "danger" : "warning", evidence: quiz.length ? `${lowQuiz.length}/${quiz.length} lượt có điểm dưới 6` : "Chưa có lượt kiểm tra trong kỳ dữ liệu", recommendation: "Giao ôn tập lại chuyên đề có điểm thấp" },
+    { id: "LOW_COMPLETION", label: "Tiến độ thấp", active: flag("LOW_COMPLETION") || summary.completedTopics === 0, severity: "warning", evidence: summary.completedTopics == null ? "Chưa có dữ liệu hoàn thành" : `Đã hoàn thành ${summary.completedTopics} chuyên đề`, recommendation: "Nhắc hoàn thành nội dung bắt buộc" },
+    { id: "NO_REVIEW_ACTIVITY", label: "Chưa xem lại", active: flag("NO_REVIEW_ACTIVITY") || (events.length > 0 && reviews.length === 0), severity: "warning", evidence: reviews.length ? `${reviews.length} hoạt động xem lại trong 30 ngày` : "Không ghi nhận hoạt động xem lại trong 30 ngày", recommendation: "Yêu cầu xem lại đáp án và ôn tập" },
+    { id: "INACTIVE_RECENTLY", label: "Ít hoạt động gần đây", active: flag("NOT_LOGGED_IN_RECENTLY") || (inactiveDays != null && inactiveDays >= 7), severity: inactiveDays != null && inactiveDays >= 14 ? "danger" : "info", evidence: inactiveDays == null ? "Chưa có hoạt động" : `Hoạt động gần nhất cách ${inactiveDays} ngày`, recommendation: "Liên hệ nhắc tham gia học tập" },
+    { id: "FAST_COMPLETION_PATTERN", label: "Hoàn thành quá nhanh", active: fast.length > 0, severity: "info", evidence: fast.length ? `${fast.length} lượt hoàn thành dưới 60 giây` : "Không phát hiện mẫu hoàn thành quá nhanh", recommendation: "Đối chiếu thời lượng và kết quả kiểm tra" },
+    { id: "HIGH_ATTEMPTS_LOW_SCORE", label: "Làm nhiều, điểm còn thấp", active: quiz.length >= 3 && lowQuiz.length >= 3, severity: "danger", evidence: `${quiz.length} lượt làm, ${lowQuiz.length} lượt dưới 6`, recommendation: "Hẹn trao đổi và giao kiểm tra lại" },
+    { id: "LOW_NEWS_ENGAGEMENT", label: "Ít đọc tin tức", active: events.length > 0 && news.length === 0, severity: "info", evidence: news.length ? `${news.length} lượt đọc tin tức` : "Không ghi nhận lượt đọc trong 30 ngày", recommendation: "Gợi ý nội dung tin tức phù hợp" }
+  ];
+  return items.map(item => item.active ? item : { ...item, severity: "ok" as const });
+};
+
+export default function ElectronicLearningProfileV2({ user, progress, topics, unitName, onBack, selectedCaseId }: { user: User; progress: LearningProgress[]; topics: LearningTopic[]; unitName: string; onBack?: () => void; selectedCaseId?: string }) {
+  const [loading, setLoading] = useState(true); const [available, setAvailable] = useState(false);
+  const [summary, setSummary] = useState<AnalyticsSummary>({}); const [peqi, setPeqi] = useState<PEQIResult | null>(null); const [events, setEvents] = useState<AnalyticsEventRecord[]>([]);
+  const [cases, setCases] = useState<EducationCase[]>([]); const [actionMessage, setActionMessage] = useState("");
+  useEffect(() => { let cancelled = false; const load = async () => { setLoading(true); setAvailable(false); setSummary({}); setPeqi(null); setEvents([]); const token = apiClient.getAuthToken(); if (!token) { if (!cancelled) setLoading(false); return; } try { const health = await analyticsService.health(token); if (!analyticsService.isSupported(health)) return; const [nextSummary, nextPeqi, nextEvents] = await Promise.all([analyticsService.getUserSummary(token, user.id), analyticsService.getUserPEQI(token, user.id), analyticsService.adminListEvents(token, { userId: user.id, range: "30d", limit: 100 })]); if (!cancelled) { setSummary(nextSummary); setPeqi(nextPeqi); setEvents(nextEvents); setAvailable(true); } } catch { /* honest unavailable state */ } finally { if (!cancelled) setLoading(false); } }; void load(); return () => { cancelled = true; }; }, [user.id]);
+  const userProgress = progress.filter(item => item.userId === user.id);
+  const risks = useMemo(() => deriveRisks(peqi, summary, events), [peqi, summary, events]);
+  const activeRisks = risks.filter(risk => risk.active); const quiz = events.filter(event => event.eventType === "QUIZ_SUBMIT" && typeof event.score === "number"); const reviews = events.filter(event => ["REVIEW_OPEN", "REVIEW_COMPLETE"].includes(event.eventType)); const aiCount = events.filter(event => event.eventType === "AI_PROMPT").length; const newsCount = events.filter(event => event.eventType === "NEWS_VIEW").length; const averageScore = quiz.length ? quiz.reduce((sum, event) => sum + Number(event.score), 0) / quiz.length : summary.averageScore;
+  const severity: EducationCaseSeverity = activeRisks.some(risk => risk.severity === "danger") ? "danger" : activeRisks.some(risk => risk.severity === "warning") ? "warning" : "info";
+  const reasons = activeRisks.map(risk => risk.evidence); const recommendations = activeRisks.map(risk => risk.recommendation).filter((item, index, all) => all.indexOf(item) === index);
+  const createDraft = (action?: CaseActionType) => { const item = createCaseDraft({ learnerId: user.id, learnerName: user.fullName, unit: unitName, peqi, reasons, riskFlags: activeRisks.map(risk => risk.id), severity, action }); setCases(current => [item, ...current]); setActionMessage(action ? `Đã tạo đề xuất xử lý: ${caseActionLabel[action]}. Chưa gửi thông báo.` : "Đã tạo bản nháp vụ việc. Chưa lưu về hệ thống."); };
+  const updateStatus = (id: string, status: EducationCaseStatus) => setCases(current => current.map(item => item.id === id ? { ...item, status, updatedAt: new Date().toISOString(), timeline: [...item.timeline, { id: `timeline-${Date.now()}`, time: new Date().toISOString(), label: `Chuyển trạng thái: ${status === "monitoring" ? "Đang theo dõi" : status === "improved" ? "Đã cải thiện" : "Đóng vụ việc"}` }] } : item));
+  const addAction = (id: string, detail: string) => setCases(current => current.map(item => item.id === id ? { ...item, updatedAt: new Date().toISOString(), timeline: [...item.timeline, { id: `timeline-${Date.now()}`, time: new Date().toISOString(), label: "Ghi chú xử lý", detail }] } : item));
+
+  return <div className="space-y-3" id="electronic-learning-profile-v2">
+    <div className="flex items-start justify-between gap-2"><div><AppCaption overline>Hồ sơ học tập điện tử v2</AppCaption><AppHeading level="h2" variant="headingL">{user.fullName}</AppHeading></div>{onBack && <Button size="sm" variant="secondary" onClick={onBack}>Danh sách</Button>}</div>
+    {loading && <div className="pixel-surface p-3"><Skeleton variant="list" /></div>}{!loading && !available && <Alert variant="info" title="Chưa có dữ liệu phân tích" description="Thông tin tài khoản vẫn hiển thị. Đánh giá rủi ro và hành động chỉ được đề xuất khi có bằng chứng." />}
+    <section className="pixel-surface p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><AppHeading level="h3" variant="title">Tóm tắt chỉ huy</AppHeading><AppCaption>{unitName} · {roleLabel(user.role)} · {statusLabel(user.accountStatus)}</AppCaption></div><Badge variant={severity === "danger" ? "danger" : severity === "warning" ? "warning" : "info"}>{activeRisks.length ? `${activeRisks.length} tín hiệu cần xem xét` : "Chưa phát hiện rủi ro"}</Badge></div><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">{[["PEQI", peqi?.score ?? "--"],["Hoàn thành", summary.completedTopics ?? userProgress.filter(item => item.progressPercent >= 100).length],["Điểm TB", averageScore == null ? "--" : Number(averageScore).toFixed(1)],["Xem lại", reviews.length],["Hỏi AI", aiCount],["Đọc tin", newsCount],["Hoạt động cuối", events[0] ? eventTime(events[0]) : "--"],["Mức rủi ro", severity === "danger" ? "Cao" : severity === "warning" ? "Theo dõi" : "Bình thường"]].map(([label,value]) => <div key={String(label)} className="rounded-xl bg-[var(--app-color-surface-soft)] p-2"><AppCaption>{label}</AppCaption><p className="mt-1 font-extrabold break-words">{value}</p></div>)}</div><AppCaption className="mt-3 block"><strong>Đề xuất chính:</strong> {recommendations[0] || peqi?.recommendation || "Chưa đủ dữ liệu để đề xuất"}</AppCaption></section>
+    <section className="space-y-3"><AppHeading level="h3" variant="title">Bằng chứng học tập</AppHeading><div className="grid gap-3 lg:grid-cols-2"><ProfileLearningProgress progress={userProgress} topics={topics} /><ProfileQuizHistory events={events} /><ProfileReviewHistory events={events} /><ProfileAIUsage events={events} /><ProfileNewsViews events={events} /><LearnerTimeline events={events} /></div></section>
+    <section className="pixel-surface p-3"><AppHeading level="h3" variant="title">Ma trận rủi ro</AppHeading><div className="mt-3 grid gap-2 md:grid-cols-2">{risks.map(risk => <article key={risk.id} className="rounded-xl bg-[var(--app-color-surface-soft)] p-3"><div className="flex items-start justify-between gap-2"><p className="font-extrabold">{risk.label}</p><Badge variant={riskVariant(risk.severity)}>{risk.severity === "ok" ? "Ổn định" : risk.severity === "danger" ? "Cần xử lý" : risk.severity === "warning" ? "Theo dõi" : "Thông tin"}</Badge></div><AppCaption className="mt-1 block">Bằng chứng: {risk.evidence}</AppCaption><AppCaption color="brand" className="mt-1 block font-bold">Đề xuất: {risk.recommendation}</AppCaption></article>)}</div></section>
+    <section className="pixel-surface p-3"><AppHeading level="h3" variant="title">Hỗ trợ quyết định</AppHeading><p className="mt-2 font-semibold">{activeRisks.length ? `Ghi nhận ${activeRisks.length} tín hiệu cần xem xét trên dữ liệu hiện có.` : "Chưa có đủ bằng chứng để yêu cầu can thiệp."}</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{recommendations.length ? recommendations.map(item => <li key={item}>{item}</li>) : <li>Tiếp tục theo dõi dữ liệu học tập.</li>}</ul><AppCaption className="mt-2 block">Theo dõi lại sau 7 ngày hoặc sau lượt kiểm tra tiếp theo. Đánh giá hoàn toàn theo quy tắc, không gọi AI bên ngoài.</AppCaption></section>
+    <section className="pixel-surface p-3"><AppHeading level="h3" variant="title">Hành động chỉ huy</AppHeading><AppCaption>Các nút chỉ tạo đề xuất/bản nháp trong phiên; không gửi thông báo.</AppCaption><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">{(["remind_learning","assign_review","assign_retest","monitor_7_days","export_profile"] as CaseActionType[]).map(action => <Button key={action} variant="secondary" onClick={() => createDraft(action)}>{caseActionLabel[action]}</Button>)}<Button onClick={() => createDraft()}>Tạo vụ việc</Button></div>{actionMessage && <Alert className="mt-3" variant="success" description={actionMessage} />}</section>
+    {selectedCaseId && !cases.some(item => item.id === selectedCaseId) && <EmptyState title={`Không tìm thấy bản nháp ${selectedCaseId}`} description="Bản nháp chỉ tồn tại trong phiên hiện tại." />}
+    <EducationCasePanel cases={cases} onStatus={updateStatus} onAddAction={addAction} />
+  </div>;
+}

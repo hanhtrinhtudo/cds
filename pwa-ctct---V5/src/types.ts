@@ -20,6 +20,10 @@ export interface User {
   phone: string;
   avatar: string;
   unitId: string;
+  organizationId?: string;
+  organizationName?: string;
+  organizationPath?: string;
+  scopeLevel?: string;
   role: UserRole;
   accountStatus: AccountStatus;
   mustChangePassword?: boolean;
@@ -245,3 +249,18 @@ export interface AuditLog {
   metadata?: any;
   createdAt: string;
 }
+
+export type {
+  Organization,
+  OrganizationAlias,
+  OrganizationAuditEntry,
+  OrganizationMigrationResult,
+  OrganizationResolveResult,
+  OrganizationScope,
+  OrganizationScopeLevel,
+  OrganizationStats,
+  OrganizationStatus,
+  OrganizationTreeNode,
+  OrganizationType,
+  UserOrganization
+} from "./types/organization";

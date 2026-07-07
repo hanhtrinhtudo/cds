@@ -18,6 +18,10 @@ import {
   HelpCircle,
   Star
 } from "lucide-react";
+import { AppCaption, AppHeading, AppText, Badge, Button, EmptyState, SectionHeader, Skeleton } from "./ui";
+import { NewsItem } from "./product";
+import { AppContainer, AppPage, AppStack } from "./layout";
+import { getNewsImageUrl } from "../utils/newsImage";
 
 interface DashboardProps {
   user: User;
@@ -63,12 +67,12 @@ export default function Dashboard({
     if (activeExam) {
       return {
         type: "exam",
-        title: "Kiểm tra chính thức đang diễn ra",
+        title: "Kiểm tra đang diễn ra",
         description: activeExam.title,
         detail: `${activeExam.durationMinutes} phút • Hạn: ${new Date(
           activeExam.endDate
         ).toLocaleDateString("vi-VN")}`,
-        actionText: "Vào kiểm tra",
+        actionText: "Bắt đầu kiểm tra",
         target: "exams",
         targetArg: activeExam,
         badgeColor: "bg-red-50 text-red-700 border-red-200",
@@ -92,7 +96,7 @@ export default function Dashboard({
             ? ` • Hạn: ${new Date(notStartedRequired.deadline).toLocaleDateString("vi-VN")}`
             : ""
         }`,
-        actionText: "Bắt đầu học",
+        actionText: "Mở bài học",
         target: "learning",
         targetArg: notStartedRequired,
         badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
@@ -154,7 +158,7 @@ export default function Dashboard({
         actionText: "Mở bài học",
         target: "learning",
         targetArg: anyNotCompleted,
-        badgeColor: "bg-slate-50 text-slate-700 border-slate-200",
+        badgeColor: "bg-slate-50 text-[var(--app-color-text-secondary)] border-[var(--app-color-border)]",
         badgeText: "Đề xuất"
       };
     }
@@ -163,8 +167,8 @@ export default function Dashboard({
       type: "done",
       title: "Đã hoàn thành nhiệm vụ học tập",
       description: "Đồng chí đã hoàn thành các nội dung được giao.",
-      detail: "Có thể tiếp tục tự luyện hoặc hỏi AI Chính trị viên để mở rộng kiến thức.",
-      actionText: "Hỏi AI Chính trị viên",
+      detail: "Có thể tiếp tục ôn luyện hoặc trao đổi với AI Chính trị viên để mở rộng kiến thức.",
+      actionText: "Trao đổi với AI Chính trị viên",
       target: "aitutor",
       targetArg: null,
       badgeColor: "bg-green-50 text-green-700 border-green-200",
@@ -202,21 +206,35 @@ export default function Dashboard({
   const getNewsDuplicateKey = (item: News) => {
   const title = normalizeNewsText(item.title);
   const summary = normalizeNewsText(item.summary);
-  const image = String(item.imageUrl || "").split("?")[0];
+  const source = normalizeNewsText(item.source);
 
-  const titleKey = title.split(" ").slice(0, 4).join(" ");
-  const summaryKey = summary.split(" ").slice(0, 6).join(" ");
+  const titleWords = title.split(" ").filter(Boolean);
+  const summaryWords = summary.split(" ").filter(Boolean);
 
-  return item.externalUrl || image || `${titleKey}_${summaryKey}_${normalizeNewsText(item.source)}` || item.id;
+  const titleKey = titleWords.slice(0, 12).join(" ");
+  const summaryKey = summaryWords.slice(0, 10).join(" ");
+
+  if (titleKey) return `${titleKey}_${source}`;
+  if (summaryKey) return `${summaryKey}_${source}`;
+
+  const link = String((item as any).externalUrl || (item as any).link || "")
+    .split("?")[0]
+    .trim()
+    .toLowerCase();
+
+  return link || item.id;
 };
 
   const uniqueNews = Array.from(
-    new Map(
-      news
-        .filter(item => item?.title)
-        .map(item => [getNewsDuplicateKey(item), item])
-    ).values()
-  );
+  new Map(
+    news
+      .filter(item => item?.title)
+      .map(item => [getNewsDuplicateKey(item), {
+        ...item,
+        imageUrl: getNewsImageUrl(item)
+      }])
+  ).values()
+);
 
   const latestNotices = uniqueNews
     .filter(n => n.category === "Thông báo đơn vị" || n.category === "Tin tức huấn luyện")
@@ -226,31 +244,33 @@ export default function Dashboard({
     latestNotices.length > 0 ? latestNotices : uniqueNews.slice(0, 3);
 
   return (
-    <div className="space-y-4 pb-4" id="dashboard-tab-content">
+    <AppPage variant="plain" id="dashboard-tab-content">
+      <AppContainer bleed>
+        <AppStack gap="md" className="pb-3">
       {/* Greeting */}
       <div
-        className="bg-gradient-to-br from-red-700 via-red-800 to-red-950 p-3.5 rounded-[24px] text-white shadow-sm relative overflow-hidden"
+        className="relative overflow-hidden rounded-[var(--app-radius-card)] bg-gradient-to-br from-red-700 via-red-800 to-red-950 p-3 text-white"
         id="dashboard-banner"
       >
         <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none translate-y-4 translate-x-3">
           <BookOpen size={86} />
         </div>
 
-        <div className="relative space-y-2.5">
+        <div className="relative space-y-2">
           <div>
-            <span className="inline-flex items-center px-2.5 py-0.5 bg-yellow-300 text-red-950 font-black rounded-full text-[9px] uppercase tracking-wide">
+            <AppCaption as="span" overline className="inline-flex items-center px-2.5 py-0.5 bg-yellow-300 text-red-950 font-extrabold rounded-full tracking-wide">
               Nhiệm vụ hôm nay
-            </span>
+            </AppCaption>
 
-            <h2 className="text-xl font-black tracking-tight mt-2 leading-tight">
+            <AppHeading level="h2" variant="headingM" color="inverse" className="tracking-tight mt-1.5 leading-tight">
               Chào đồng chí,
-            </h2>
+            </AppHeading>
 
-            <p className="text-lg font-black text-yellow-300 leading-snug break-words">
+            <AppHeading level="h3" variant="headingM" className="text-yellow-300 leading-snug break-words">
               {user.fullName}
-            </p>
+            </AppHeading>
 
-            <p className="text-[11px] text-red-50 mt-1 leading-relaxed">
+            <AppCaption color="inverse" className="text-red-50 mt-1 leading-relaxed">
               Hôm nay là{" "}
               {new Date().toLocaleDateString("vi-VN", {
                 weekday: "long",
@@ -258,24 +278,24 @@ export default function Dashboard({
                 month: "numeric"
               })}
               . Hãy hoàn thành các nội dung học tập, ôn luyện và kiểm tra theo kế hoạch.
-            </p>
+            </AppCaption>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 bg-red-950/40 border border-white/10 rounded-2xl p-2">
+          <div className="grid grid-cols-2 gap-2 bg-red-950/35 rounded-2xl p-1.5">
             <div className="text-center">
-              <p className="text-[9px] text-yellow-200 uppercase font-extrabold tracking-wide">
+              <AppCaption overline className="text-yellow-200 uppercase font-extrabold tracking-wide">
                 Tiến độ học tập
-              </p>
-              <p className="text-xl leading-none font-black text-yellow-300 mt-1">
+              </AppCaption>
+              <p className="text-xl leading-none font-extrabold text-yellow-300 mt-1">
                 {completionRate}%
               </p>
             </div>
 
             <div className="text-center border-l border-white/15">
-              <p className="text-[9px] text-yellow-200 uppercase font-extrabold tracking-wide">
+              <AppCaption overline className="text-yellow-200 uppercase font-extrabold tracking-wide">
                 Kết quả gần nhất
-              </p>
-              <p className="text-xl leading-none font-black text-white mt-1">
+              </AppCaption>
+              <p className="text-xl leading-none font-extrabold text-white mt-1">
                 {averageScore > 0 ? averageScore.toFixed(1) : "--"}
               </p>
             </div>
@@ -284,148 +304,137 @@ export default function Dashboard({
       </div>
 
       {/* Priority task */}
-      <div className="bg-white border border-slate-100 rounded-[24px] p-3 shadow-sm space-y-2.5" id="priority-task-box">
+      <div className="pixel-surface space-y-2.5 p-3" id="priority-task-box">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <AppCaption overline className="font-extrabold uppercase tracking-widest text-[var(--app-color-text-muted)]">
             Hôm nay cần làm gì?
-          </h3>
+          </AppCaption>
 
-          <span
-            className={`px-2.5 py-0.5 border text-[9px] font-black rounded-full uppercase tracking-wide shrink-0 ${priorityTask.badgeColor}`}
-          >
+          <Badge className={`shrink-0 ${priorityTask.badgeColor}`}>
             {priorityTask.badgeText}
-          </span>
+          </Badge>
         </div>
 
-        <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 border border-slate-100 rounded-2xl">
+        <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-2xl">
           <div
             className={`p-2.5 rounded-2xl shrink-0 ${
               priorityTask.type === "exam"
-                ? "bg-red-50 text-red-600 border border-red-100"
+                ? "bg-red-50 text-red-600"
                 : priorityTask.type === "review"
-                  ? "bg-orange-50 text-orange-600 border border-orange-100"
-                  : "bg-red-50 text-red-700 border border-red-100"
+                  ? "bg-orange-50 text-orange-600"
+                  : "bg-red-50 text-red-700"
             }`}
           >
             {priorityTask.type === "exam" ? <Calendar size={18} /> : <BookOpen size={18} />}
           </div>
 
           <div className="flex-1 min-w-0 space-y-1">
-            <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wide leading-snug">
+            <AppCaption overline className="font-bold text-[var(--app-color-text-muted)] uppercase tracking-wide leading-snug">
               {priorityTask.title}
-            </h4>
-            <p className="text-sm font-black text-slate-900 leading-snug">
+            </AppCaption>
+            <AppText variant="body" weight="black" className="text-[var(--app-color-text-primary)] leading-snug">
               {priorityTask.description}
-            </p>
-            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+            </AppText>
+            <AppCaption className="text-[var(--app-color-text-muted)] font-medium leading-relaxed">
               {priorityTask.detail}
-            </p>
+            </AppCaption>
           </div>
         </div>
 
-        <button
+        <Button
+          type="button"
           onClick={() => onNavigate(priorityTask.target, priorityTask.targetArg)}
-          className={`w-full py-2.5 px-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition shadow-sm active:scale-[0.98] min-h-[42px] ${
-            priorityTask.type === "exam"
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : priorityTask.type === "review"
-                ? "bg-orange-600 hover:bg-orange-700 text-white"
-                : "bg-red-700 hover:bg-red-800 text-white"
-          }`}
+          variant={priorityTask.type === "review" ? "warning" : "primary"}
+          fullWidth
+          rightIcon={<ChevronRight size={18} />}
           id="btn-priority-task-action"
         >
-          <span>{priorityTask.actionText}</span>
-          <ChevronRight size={18} />
-        </button>
+          {priorityTask.actionText}
+        </Button>
       </div>
 
       {/* Quick actions */}
-      <div className="bg-white border border-slate-100 rounded-[24px] p-3 shadow-sm space-y-2.5" id="quick-actions">
-        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-          Truy cập nhanh
-        </h4>
+      <div className="pixel-surface space-y-2.5 p-3" id="quick-actions">
+        <SectionHeader title="Truy cập nhanh" compact />
 
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => onNavigate("learning")}
-            className="p-2.5 bg-slate-50 hover:bg-red-50 active:scale-[0.98] border border-slate-100 rounded-2xl text-left transition flex items-center gap-2 min-h-[50px]"
+            className="p-2 bg-slate-50 hover:bg-red-50 active:scale-[0.98] rounded-2xl text-left transition flex items-center gap-2 min-h-[48px]"
           >
             <div className="p-1.5 bg-red-100 text-red-700 rounded-xl shrink-0">
               <BookOpen size={16} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-extrabold text-slate-800 truncate">Học tập</p>
-              <p className="text-[9px] text-slate-400 truncate">Mở tài liệu</p>
+              <p className="text-xs font-extrabold text-[var(--app-color-text-primary)] truncate">Học tập</p>
+              <AppCaption truncate className="text-[var(--app-color-text-muted)]">Mở tài liệu</AppCaption>
             </div>
           </button>
 
           <button
             onClick={() => onNavigate("quiz")}
-            className="p-2.5 bg-slate-50 hover:bg-red-50 active:scale-[0.98] border border-slate-100 rounded-2xl text-left transition flex items-center gap-2 min-h-[50px]"
+            className="p-2 bg-slate-50 hover:bg-red-50 active:scale-[0.98] rounded-2xl text-left transition flex items-center gap-2 min-h-[48px]"
           >
             <div className="p-1.5 bg-blue-100 text-blue-700 rounded-xl shrink-0">
               <HelpCircle size={16} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-extrabold text-slate-800 truncate">Ôn trắc nghiệm</p>
-              <p className="text-[9px] text-slate-400 truncate">Tự luyện câu hỏi</p>
+              <p className="text-xs font-extrabold text-[var(--app-color-text-primary)] truncate">Ôn trắc nghiệm</p>
+              <AppCaption truncate className="text-[var(--app-color-text-muted)]">Tự luyện câu hỏi</AppCaption>
             </div>
           </button>
 
           <button
             onClick={() => onNavigate("exams")}
-            className="p-2.5 bg-slate-50 hover:bg-red-50 active:scale-[0.98] border border-slate-100 rounded-2xl text-left transition flex items-center gap-2 min-h-[50px]"
+            className="p-2 bg-slate-50 hover:bg-red-50 active:scale-[0.98] rounded-2xl text-left transition flex items-center gap-2 min-h-[48px]"
           >
             <div className="p-1.5 bg-amber-100 text-amber-700 rounded-xl shrink-0">
               <Calendar size={16} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-extrabold text-slate-800 truncate">Kiểm tra</p>
-              <p className="text-[9px] text-slate-400 truncate">Thi thử, kiểm tra</p>
+              <p className="text-xs font-extrabold text-[var(--app-color-text-primary)] truncate">Kiểm tra</p>
+              <AppCaption truncate className="text-[var(--app-color-text-muted)]">Thi thử, kiểm tra</AppCaption>
             </div>
           </button>
 
           <button
             onClick={() => onNavigate("aitutor")}
-            className="p-2.5 bg-slate-50 hover:bg-red-50 active:scale-[0.98] border border-slate-100 rounded-2xl text-left transition flex items-center gap-2 min-h-[50px]"
+            className="p-2 bg-slate-50 hover:bg-red-50 active:scale-[0.98] rounded-2xl text-left transition flex items-center gap-2 min-h-[48px]"
           >
             <div className="p-1.5 bg-rose-100 text-rose-700 rounded-xl shrink-0">
               <MessageSquare size={16} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-extrabold text-slate-800 truncate">AI Chính trị viên</p>
-              <p className="text-[9px] text-slate-400 truncate">Hỏi, tóm tắt, giải thích</p>
+              <p className="text-xs font-extrabold text-[var(--app-color-text-primary)] truncate">AI Chính trị viên</p>
+              <AppCaption truncate className="text-[var(--app-color-text-muted)]">Hỏi, tóm tắt, giải thích</AppCaption>
             </div>
           </button>
         </div>
       </div>
 
       {/* Weak topics */}
-      <div className="bg-white border border-slate-100 rounded-[24px] p-3 shadow-sm space-y-2.5" id="weak-topics-box">
-        <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-          <AlertTriangle className="text-orange-500" size={16} />
-          <span>Nội dung cần củng cố</span>
-        </h3>
+      <div className="pixel-surface space-y-2.5 p-3" id="weak-topics-box">
+        <SectionHeader title="Nội dung cần củng cố" compact action={<AlertTriangle className="text-orange-500" size={16} />} />
 
         {weakTopics.length > 0 ? (
           <div className="space-y-2">
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-[var(--app-color-text-muted)] leading-relaxed">
               Các nội dung dưới đây cần được ôn lại để nâng cao kết quả học tập.
             </p>
 
             {weakTopics.map(t => (
               <div
                 key={t.id}
-                className="p-3 bg-orange-50/80 border border-orange-100 rounded-2xl flex items-center justify-between gap-2 text-sm"
+                className="p-2.5 bg-orange-50/80 rounded-2xl flex items-center justify-between gap-2 text-sm"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-2 h-2 bg-orange-500 rounded-full shrink-0" />
-                  <p className="font-bold text-slate-800 truncate">{t.title}</p>
+                  <p className="font-bold text-[var(--app-color-text-primary)] truncate">{t.title}</p>
                 </div>
 
                 <button
                   onClick={() => onNavigate("learning", t)}
-                  className="text-orange-800 text-xs font-black shrink-0 flex items-center hover:underline"
+                  className="text-orange-800 text-xs font-extrabold shrink-0 flex items-center hover:underline"
                 >
                   <span>Ôn lại</span>
                   <ChevronRight size={12} />
@@ -434,94 +443,60 @@ export default function Dashboard({
             ))}
           </div>
         ) : (
-          <div className="py-3 text-center text-slate-400 flex flex-col items-center gap-1 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-            <Star size={20} className="text-amber-400 fill-amber-400" />
-            <p className="text-xs font-black text-slate-700">Chưa có nội dung cần củng cố</p>
-            <p className="text-[11px] text-slate-400">
-              Tiếp tục duy trì học tập và ôn luyện thường xuyên.
-            </p>
-          </div>
+          <EmptyState
+            icon={<Star size={20} className="text-amber-400 fill-amber-400" />}
+            title="Chưa có nội dung cần củng cố"
+            description="Tiếp tục duy trì học tập và ôn luyện thường xuyên."
+            className="py-3"
+          />
         )}
       </div>
 
       {/* News */}
-      <div className="bg-white border border-slate-100 rounded-[24px] p-3 shadow-sm space-y-2.5" id="notices-box">
-        <div className="flex items-center justify-between pb-1 border-b border-slate-50">
-          <h3 className="text-sm font-black text-slate-800">Tin tức & thông báo</h3>
-
-          <button
+      <div className="pixel-surface space-y-2 p-3" id="notices-box">
+        <SectionHeader
+          title="Tin tức và thông báo"
+          compact
+          className="pb-0.5"
+          action={<button
             onClick={() => onNavigate("news")}
-            className="text-xs text-red-700 font-black hover:underline flex items-center gap-0.5"
+            className="inline-flex min-h-11 items-center gap-0.5 text-xs text-red-700 font-extrabold hover:underline"
           >
             <span>Xem tất cả</span>
             <ChevronRight size={13} />
-          </button>
-        </div>
+          </button>}
+        />
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {dashboardNotices.map(notice => (
-            <div
+            <NewsItem
               key={notice.id}
-              onClick={() => onNavigate("news_detail", notice)}
-              className="group cursor-pointer flex gap-2.5 p-2.5 bg-slate-50 hover:bg-red-50/40 rounded-2xl transition border border-transparent hover:border-red-100"
-            >
-              <div className="shrink-0 w-14 h-12 bg-slate-200 rounded-xl overflow-hidden relative border border-slate-200">
-                {notice.imageUrl ? (
-                  <img
-                    src={notice.imageUrl}
-                    alt={notice.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    decoding="async"
-                    onError={event => {
-                      event.currentTarget.style.display = "none";
-                      event.currentTarget.nextElementSibling?.classList.remove("hidden");
-                    }}
-                  />
-                ) : null}
-                  <div className={`${notice.imageUrl ? "hidden" : ""} w-full h-full flex items-center justify-center text-slate-400 bg-slate-100`}>
-                    <BookOpen size={17} />
-                  </div>
-              </div>
-
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <span className="inline-block px-2 py-0.5 bg-red-50 text-red-700 text-[9px] font-black rounded w-fit mb-1 uppercase tracking-wide">
-                  {notice.category}
-                </span>
-
-                <h4 className="text-sm font-black text-slate-800 group-hover:text-red-700 transition line-clamp-1 leading-snug">
-                  {notice.title}
-                </h4>
-
-                <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
-                  {notice.summary}
-                </p>
-              </div>
-            </div>
+              title={notice.title}
+              summary={notice.summary}
+              category={notice.category}
+              imageUrl={getNewsImageUrl(notice)}
+              compact
+              className="bg-slate-50 shadow-none hover:border-red-100 hover:bg-red-50/40"
+              onOpen={() => onNavigate("news_detail", notice)}
+            />
           ))}
 
           {dashboardNotices.length === 0 && newsLoading && (
-            <div className="w-full p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
-              <div className="w-12 h-10 rounded-xl bg-slate-200 animate-pulse shrink-0" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-2.5 w-4/5 rounded bg-slate-200 animate-pulse" />
-                <div className="h-2 w-1/2 rounded bg-slate-100 animate-pulse" />
-                <p className="text-[11px] font-bold text-slate-500 pt-0.5">Đang tải tin tức...</p>
-              </div>
-            </div>
+            <Skeleton variant="news" />
           )}
 
           {dashboardNotices.length === 0 && !newsLoading && (
-            <button
-              onClick={() => onNavigate("news")}
-              className="w-full p-3 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-left text-xs font-bold text-slate-600"
-            >
-              {newsLoadError ? "Chưa tải được tin tức. Nhấn để thử lại trong chuyên mục Tin tức và Chính sách." : "Chưa có tin tức mới. Nhấn để mở chuyên mục Tin tức và Chính sách."}
-            </button>
+            <EmptyState
+              variant="news"
+              title={newsLoadError ? "Không thể tải tin tức" : "Hiện chưa có tin tức mới"}
+              description={newsLoadError ? "Vui lòng mở chuyên mục Tin tức và thử lại." : "Tin tức mới sẽ được hiển thị tại đây."}
+              action={<Button type="button" variant="secondary" size="sm" onClick={() => onNavigate("news")}>Xem tin tức</Button>}
+            />
           )}
         </div>
       </div>
-    </div>
+        </AppStack>
+      </AppContainer>
+    </AppPage>
   );
 }

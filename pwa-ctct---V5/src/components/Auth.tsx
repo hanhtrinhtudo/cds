@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AccountStatus, Unit, User } from "../types";
 import { authService } from "../services/authService";
 import { AlertTriangle, CheckCircle, Home, Key, Shield, User as UserIcon } from "lucide-react";
+import { Alert, AppCaption, AppHeading, AppText, Button, Input } from "./ui";
 
 interface AuthProps {
   currentUser: User | null;
@@ -44,8 +45,8 @@ export default function Auth({ currentUser, onLogin, units }: AuthProps) {
     authService
       .login(username.trim(), password)
       .then((res) => onLogin(res.user))
-      .catch((err: any) => {
-        setError(err.message || "Không thể đăng nhập.");
+      .catch(() => {
+        setError("Không thể đăng nhập. Vui lòng kiểm tra thông tin và thử lại.");
       });
   };
 
@@ -94,8 +95,8 @@ export default function Auth({ currentUser, onLogin, units }: AuthProps) {
         setRegPassword("");
         setRegConfirmPassword("");
       })
-      .catch((err: any) => {
-        setError(err.message || "Không thể đăng ký.");
+      .catch(() => {
+        setError("Không thể tạo tài khoản. Vui lòng thử lại.");
       });
   };
 
@@ -103,7 +104,7 @@ export default function Auth({ currentUser, onLogin, units }: AuthProps) {
     e.preventDefault();
     setError("");
     if (!password || !newPassword) {
-      setError("Vui lòng nhập mật khẩu tạm thời và mật khẩu mới.");
+      setError("Vui lòng nhập mật khẩu được cấp và mật khẩu mới.");
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -116,29 +117,25 @@ export default function Auth({ currentUser, onLogin, units }: AuthProps) {
       setNewPassword("");
       setConfirmNewPassword("");
       onLogin(res.user);
-    } catch (err: any) {
-      setError(err.message || "Không thể đổi mật khẩu.");
+    } catch {
+      setError("Không thể đổi mật khẩu. Vui lòng thử lại.");
     }
   };
 
   if (currentUser && currentUser.accountStatus === AccountStatus.PENDING) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 py-8 text-center" id="auth-pending-screen">
-        <div className="p-4 bg-amber-50 text-amber-800 rounded-full mb-4 animate-pulse">
+        <div className="p-4 bg-amber-50 text-amber-800 rounded-full mb-4 motion-status-change">
           <AlertTriangle size={48} />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Đang chờ phê duyệt</h2>
-        <p className="text-slate-600 max-w-md mb-6 text-sm">
+        <AppHeading level="h2" variant="headingXl" className="font-bold text-[var(--app-color-text-primary)] mb-2">Đang chờ phê duyệt</AppHeading>
+        <AppText className="text-[var(--app-color-text-secondary)] max-w-md mb-6">
           Tài khoản của đồng chí <strong>{currentUser.fullName}</strong> đã được đăng ký thành công vào đơn vị{" "}
           <strong>{units.find((u) => u.id === currentUser.unitId)?.name || currentUser.unitId}</strong>.
-        </p>
-        <button
-          onClick={() => onLogin(null)}
-          className="px-6 py-2 bg-slate-800 text-white font-medium rounded-lg text-sm hover:bg-slate-700 transition"
-          id="btn-back-to-login"
-        >
+        </AppText>
+        <Button type="button" onClick={() => onLogin(null)} variant="secondary" id="btn-back-to-login">
           Quay lại Đăng nhập
-        </button>
+        </Button>
       </div>
     );
   }
@@ -148,70 +145,68 @@ export default function Auth({ currentUser, onLogin, units }: AuthProps) {
       className="min-h-[calc(100vh-7rem)] px-4 py-6 flex items-center justify-center bg-[radial-gradient(circle_at_top,#fff7d6_0,#fff7ed_34%,#f8fafc_70%)]"
       id="auth-container"
     >
-      <section className="w-full max-w-md overflow-hidden rounded-[2rem] border border-red-100 bg-white shadow-2xl shadow-red-950/10">
+      <section className="app-overlay w-full max-w-md overflow-hidden">
         <div className="relative bg-gradient-to-br from-[#A41919] via-[#8B1616] to-[#5f1010] px-6 pt-7 pb-6 text-white">
           <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#FFD966]/20 blur-sm" />
           <div className="absolute -bottom-12 -left-10 h-32 w-32 rounded-full bg-white/10 blur-sm" />
           <div className="relative">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#FFD966]/40 bg-white/10 shadow-inner">
-                <Shield className="text-[#FFD966]" size={30} />
+                <Shield className="text-yellow-200" size={30} />
               </div>
               <div>
-                <h1 className="text-lg font-extrabold tracking-tight">BAN CHỈ HUY PTKV3</h1>
-                <p className="text-xs font-semibold text-[#FFE9A6]">Trung tâm Giáo dục Chính trị số</p>
+                <AppHeading level="h1" variant="headingM" color="inverse" className="font-extrabold tracking-tight">BAN CHỈ HUY PTKV3</AppHeading>
+                <AppCaption color="inverse" className="font-semibold text-yellow-100">Trung tâm Giáo dục Chính trị số</AppCaption>
               </div>
             </div>
-            <p className="text-sm text-red-50">
-              Đăng nhập để học tập, ôn luyện, kiểm tra nhận thức và theo dõi kết quả trên nền tảng mobile-first.
-            </p>
+            <AppText variant="body" color="inverse" className="text-red-50">
+              Đăng nhập để học tập, ôn luyện, kiểm tra và theo dõi kết quả.
+            </AppText>
           </div>
         </div>
 
         <div className="p-5">
           <div className="mb-5 grid grid-cols-2 rounded-2xl bg-red-50 p-1" role="tablist">
-            <button
+            <Button
               type="button"
-              className={`rounded-xl px-4 py-2.5 text-sm font-extrabold transition ${
-                activeTab === "login" ? "bg-white text-[#A41919] shadow-sm" : "text-red-700/70"
+              variant="ghost"
+              size="sm"
+              className={`rounded-xl ${
+                activeTab === "login" ? "bg-white text-red-800 app-shadow-low" : "text-red-700/70"
               }`}
               onClick={() => switchTab("login")}
               id="btn-switch-login"
             >
               Đăng nhập
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={`rounded-xl px-4 py-2.5 text-sm font-extrabold transition ${
-                activeTab === "register" ? "bg-white text-[#A41919] shadow-sm" : "text-red-700/70"
+              variant="ghost"
+              size="sm"
+              className={`rounded-xl ${
+                activeTab === "register" ? "bg-white text-red-800 app-shadow-low" : "text-red-700/70"
               }`}
               onClick={() => switchTab("register")}
               id="btn-switch-register"
             >
               Đăng ký
-            </button>
+            </Button>
           </div>
 
           {successMsg && (
-            <div className="mb-4 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-800">
-              <CheckCircle className="mt-0.5 shrink-0 text-green-600" size={16} />
-              <span>{successMsg}</span>
-            </div>
+            <Alert className="mb-4" variant="success" icon={<CheckCircle className="text-green-600" size={16} />} description={successMsg} />
           )}
 
           {error && (
-            <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-              <AlertTriangle className="mt-0.5 shrink-0 text-red-600" size={16} />
-              <span>{error}</span>
-            </div>
+            <Alert className="mb-4" variant="danger" icon={<AlertTriangle className="text-red-600" size={16} />} description={error} />
           )}
 
           {currentUser?.mustChangePassword ? (
             <form onSubmit={handleRequiredPasswordChange} className="space-y-4" id="required-password-change-form">
-              <h2 className="border-b pb-2 text-lg font-semibold text-slate-800">Đổi mật khẩu lần đầu</h2>
+              <AppHeading level="h2" variant="title" className="border-b pb-2 font-semibold text-[var(--app-color-text-primary)]">Đổi mật khẩu lần đầu</AppHeading>
               <PasswordInput
-                label="Mật khẩu tạm thời"
-                placeholder="Nhập mật khẩu tạm thời"
+                label="Mật khẩu được cấp"
+                placeholder="Nhập mật khẩu được cấp"
                 value={password}
                 onChange={setPassword}
                 minLength={6}
@@ -245,14 +240,14 @@ export default function Auth({ currentUser, onLogin, units }: AuthProps) {
               <PasswordInput label="Mật khẩu" placeholder="Nhập mật khẩu" value={password} onChange={setPassword} minLength={6} />
 
               <div className="flex items-center justify-between gap-3">
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-500">
-                  <input type="checkbox" className="rounded border-slate-300 text-[#A41919] focus:ring-[#A41919]" />
+                <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-[var(--app-color-text-muted)]">
+                  <input type="checkbox" className="h-5 w-5 rounded border-[var(--app-color-border-strong)] text-red-800 focus:ring-red-800" />
                   <span>Ghi nhớ đăng nhập</span>
                 </label>
                 <button
                   type="button"
-                  onClick={() => setError("Vui lòng liên hệ quản trị hoặc dùng chức năng khôi phục ở backend.")}
-                  className="text-xs font-bold text-[#A41919] hover:underline"
+                  onClick={() => setError("Vui lòng liên hệ quản trị viên để được hỗ trợ khôi phục mật khẩu.")}
+                  className="min-h-11 px-1 text-xs font-bold text-red-800 hover:underline"
                 >
                   Quên mật khẩu?
                 </button>
@@ -261,7 +256,7 @@ export default function Auth({ currentUser, onLogin, units }: AuthProps) {
               <PrimaryButton label="Đăng nhập" id="btn-login-submit" />
             </form>
           ) : (
-            <form onSubmit={handleRegister} className="space-y-3.5" id="register-form" autoComplete="on" noValidate>
+            <form onSubmit={handleRegister} className="space-y-3" id="register-form" autoComplete="on" noValidate>
               <TextInput label="Họ và tên" name="name" placeholder="Họ và tên đầy đủ" value={regName} onChange={setRegName} icon={<UserIcon size={16} />} />
               <TextInput
                 label="Tài khoản đăng nhập"
@@ -306,21 +301,16 @@ function TextInput({
   icon: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-bold text-slate-600">{label}</label>
-      <div className="relative">
-        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">{icon}</span>
-        <input
-          name={name}
-          type="text"
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A41919]/25"
-          required
-        />
-      </div>
-    </div>
+    <Input
+      label={label}
+      name={name}
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      leftIcon={icon}
+      required
+    />
   );
 }
 
@@ -340,35 +330,30 @@ function PasswordInput({
   minLength: number;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-bold text-slate-600">{label}</label>
-      <div className="relative">
-        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-          <Key size={16} />
-        </span>
-        <input
-          name={name}
-          type="password"
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A41919]/25"
-          required
-          minLength={minLength}
-        />
-      </div>
-    </div>
+    <Input
+      label={label}
+      name={name}
+      type="password"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      leftIcon={<Key size={16} />}
+      required
+      minLength={minLength}
+    />
   );
 }
 
 function PrimaryButton({ label, id }: { label: string; id?: string }) {
   return (
-    <button
+    <Button
       type="submit"
       id={id}
-      className="w-full rounded-xl bg-[#A41919] px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/20 transition hover:bg-[#8B1616] active:scale-[0.99]"
+      fullWidth
+      size="lg"
+      className="app-shadow-high shadow-red-900/20"
     >
       {label}
-    </button>
+    </Button>
   );
 }

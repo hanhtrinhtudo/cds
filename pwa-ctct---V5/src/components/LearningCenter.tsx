@@ -3,6 +3,8 @@ import { User, LearningTopic, LearningProgress, LearningStatus, TopicCategory, Q
 import { BookOpen, Search, CheckCircle, Clock, PlayCircle, FileText, ChevronRight, Bookmark, ArrowLeft, MessageSquare, Award, ExternalLink } from "lucide-react";
 import { learningService, MaterialQuizQuestion } from "../services/learningService";
 import { reviewService, ReviewPack } from "../services/reviewService";
+import { LearningCard } from "./product";
+import { AppContainer, AppPage, AppStack } from "./layout";
 
 
 interface LearningCenterProps {
@@ -11,6 +13,10 @@ interface LearningCenterProps {
   progress: LearningProgress[];
   quizAttempts: QuizAttempt[];
   onUpdateProgress: (topicId: string, status: LearningStatus, percent: number) => void;
+  onSaveQuizAttempt: (attempt: QuizAttempt) => void;
+  onSaveReview: (review: ReviewPack) => void;
+  bookmarkedIds: string[];
+  onToggleBookmark: (topicId: string, active: boolean) => void;
   onNavigate: (tab: string, arg?: any) => void;
   activeTopicArg: LearningTopic | null;
   onClearTopicArg: () => void;
@@ -22,6 +28,10 @@ export default function LearningCenter({
   progress,
   quizAttempts,
   onUpdateProgress,
+  onSaveQuizAttempt,
+  onSaveReview,
+  bookmarkedIds,
+  onToggleBookmark,
   onNavigate,
   activeTopicArg,
   onClearTopicArg
@@ -30,7 +40,6 @@ export default function LearningCenter({
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [detailTopic, setDetailTopic] = useState<LearningTopic | null>(activeTopicArg);
-  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [showQuizWarning, setShowQuizWarning] = useState(false);
   const [learningFallback, setLearningFallback] = useState(learningService.wasFallbackUsed());
   const [detailLoading, setDetailLoading] = useState(false);
@@ -53,9 +62,7 @@ export default function LearningCenter({
   }, [activeTopicArg]);
 
   const toggleBookmark = (topicId: string) => {
-    setBookmarkedIds(prev => 
-      prev.includes(topicId) ? prev.filter(id => id !== topicId) : [...prev, topicId]
-    );
+    onToggleBookmark(topicId, !bookmarkedIds.includes(topicId));
   };
 
   const getTopicProgress = (topicId: string) => {
@@ -137,8 +144,8 @@ export default function LearningCenter({
       const questions = await learningService.getMaterialQuiz(detailTopic.id, 10);
       setQuizQuestions(questions);
       if (!questions.length) setQuizError("Chưa có câu hỏi ôn tập cho tài liệu này.");
-    } catch (error) {
-      setQuizError(error instanceof Error ? error.message : "Không tải được câu hỏi ôn tập.");
+    } catch {
+      setQuizError("Không thể tải câu hỏi ôn tập. Vui lòng thử lại.");
       setQuizQuestions([]);
     } finally {
       setQuizLoading(false);
@@ -180,6 +187,25 @@ export default function LearningCenter({
       })
     };
     reviewService.saveReviewPack(reviewPayload);
+    onSaveReview(reviewPayload);
+    onSaveQuizAttempt({
+      id: reviewPayload.attemptId,
+      userId: user.id,
+      quizType: "topic",
+      topicId: detailTopic.id,
+      startedAt: reviewPayload.submittedAt,
+      submittedAt: reviewPayload.submittedAt,
+      score,
+      correctCount: correct,
+      wrongCount: wrong,
+      totalQuestions: quizQuestions.length,
+      answers: Object.fromEntries(quizQuestions.map(question => {
+        const selected = quizAnswers[question.id] || "";
+        const index = question.options.findIndex(option => option === selected);
+        return [question.id, index >= 0 ? [index] : []];
+      })),
+      status: "submitted"
+    });
     setLastLearningReview(reviewPayload);
     setQuizScore(score);
     setQuizSubmitted(true);
@@ -212,12 +238,14 @@ export default function LearningCenter({
     const progressPercent = prog ? prog.progressPercent : 0;
 
     return (
-      <div className="space-y-4 relative" id="learning-topic-detail-view">
+      <AppPage variant="plain" id="learning-topic-detail-view">
+        <AppContainer bleed>
+          <AppStack gap="lg" className="relative">
         {/* Sticky Header with Back Button */}
-        <div className="sticky top-0 bg-slate-50/95 backdrop-blur-md flex items-center justify-between py-2 border-b border-slate-100 z-20">
+        <div className="sticky top-0 bg-slate-50/95 backdrop-blur-md flex items-center justify-between py-2 border-b border-[var(--app-color-divider)] z-20">
           <button
             onClick={handleBackToList}
-            className="flex items-center gap-1.5 text-xs font-black text-emerald-800 hover:text-emerald-950 transition cursor-pointer min-h-[32px]"
+            className="flex min-h-11 items-center gap-1.5 text-xs font-extrabold text-[var(--app-color-brand-primary)] hover:text-[var(--app-color-brand-primary-dark)] transition cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span>DANH SÁCH BÀI HỌC</span>
@@ -225,10 +253,10 @@ export default function LearningCenter({
           
           <button
             onClick={() => toggleBookmark(detailTopic.id)}
-            className={`p-1.5 rounded-xl border transition cursor-pointer ${
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border transition cursor-pointer ${
               bookmarkedIds.includes(detailTopic.id)
                 ? "bg-amber-50 text-amber-500 border-amber-200"
-                : "bg-white text-slate-400 border-slate-200 hover:text-slate-600"
+                : "bg-white text-[var(--app-color-text-muted)] border-[var(--app-color-border)] hover:text-[var(--app-color-text-secondary)]"
             }`}
             title="Lưu trữ học tập"
           >
@@ -237,55 +265,55 @@ export default function LearningCenter({
         </div>
 
         {/* Visual Topic Banner */}
-        <div className="bg-gradient-to-tr from-emerald-900 to-emerald-800 rounded-2xl p-5 text-white relative overflow-hidden shadow-sm">
+        <div className="relative overflow-hidden rounded-[var(--app-radius-card)] bg-gradient-to-tr from-[var(--app-color-brand-primary-dark)] to-[var(--app-color-brand-primary)] p-5 text-white app-shadow-low">
           <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-3">
             <BookOpen size={120} />
           </div>
-          <span className="px-2 py-0.5 bg-yellow-400 text-slate-950 font-black rounded text-[9px] uppercase tracking-wide">
+          <span className="px-2 py-0.5 bg-yellow-400 text-[var(--app-color-text-primary)] font-extrabold rounded text-caption uppercase tracking-wide">
             {detailTopic.category}
           </span>
-          <h1 className="text-sm font-black text-white mt-2 leading-snug">
+          <h1 className="text-sm font-extrabold text-white mt-2 leading-snug">
             {detailTopic.title}
           </h1>
-          <p className="text-[10px] text-emerald-100 mt-1.5 leading-relaxed">
+          <p className="text-caption text-yellow-100 mt-1.5 leading-relaxed">
             {detailTopic.description}
           </p>
         </div>
 
         {detailLoading && (
-          <div className="bg-white border border-slate-100 rounded-2xl p-3 text-[11px] font-bold text-slate-500">
-            Đang tải tài liệu, mục nội dung và câu hỏi ôn tập từ Hoctap...
+          <div className="bg-white border border-[var(--app-color-divider)] rounded-2xl p-3 text-body-s font-bold text-[var(--app-color-text-muted)]">
+            Đang chuẩn bị tài liệu học tập...
           </div>
         )}
 
         {/* Lesson metadata metrics */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-4 grid grid-cols-2 gap-3.5 text-[11px] shadow-sm">
+        <div className="bg-white border border-[var(--app-color-divider)] rounded-2xl p-4 grid grid-cols-2 gap-3.5 text-body-s app-shadow-low">
           <div>
-            <p className="text-slate-400 font-bold">Thời gian tự học</p>
-            <p className="font-extrabold text-slate-800 flex items-center gap-1 mt-0.5">
-              <Clock size={12} className="text-slate-400" />
+            <p className="text-[var(--app-color-text-muted)] font-bold">Thời gian tự học</p>
+            <p className="font-extrabold text-[var(--app-color-text-primary)] flex items-center gap-1 mt-0.5">
+              <Clock size={12} className="text-[var(--app-color-text-muted)]" />
               <span>{detailTopic.estimatedMinutes} phút</span>
             </p>
           </div>
           <div>
-            <p className="text-slate-400 font-bold">Hình thức học</p>
-            <p className="font-extrabold text-slate-800 mt-0.5">
+            <p className="text-[var(--app-color-text-muted)] font-bold">Hình thức học</p>
+            <p className="font-extrabold text-[var(--app-color-text-primary)] mt-0.5">
               {detailTopic.required ? "Bắt buộc chính khóa" : "Tự học mở rộng"}
             </p>
           </div>
           <div>
-            <p className="text-slate-400 font-bold">Cấp độ lý luận</p>
-            <p className="font-extrabold text-slate-800 mt-0.5">{detailTopic.difficulty}</p>
+            <p className="text-[var(--app-color-text-muted)] font-bold">Cấp độ lý luận</p>
+            <p className="font-extrabold text-[var(--app-color-text-primary)] mt-0.5">{detailTopic.difficulty}</p>
           </div>
           <div>
-            <p className="text-slate-400 font-bold">Tiến trình</p>
-            <span className={`inline-block px-2 py-0.5 rounded-full font-black text-[9px] mt-0.5 ${
+            <p className="text-[var(--app-color-text-muted)] font-bold">Tiến trình</p>
+            <span className={`inline-block px-2 py-0.5 rounded-full font-extrabold text-caption mt-0.5 ${
               status === LearningStatus.COMPLETED ? "bg-green-100 text-green-800" :
               status === LearningStatus.IN_PROGRESS ? "bg-blue-100 text-blue-800" :
               status === LearningStatus.NEED_REVIEW ? "bg-orange-100 text-orange-800" :
-              "bg-slate-100 text-slate-600"
+              "bg-slate-100 text-[var(--app-color-text-secondary)]"
             }`}>
-              {status === LearningStatus.COMPLETED ? "Đã hoàn thành" :
+              {status === LearningStatus.COMPLETED ? "Hoàn thành" :
                status === LearningStatus.IN_PROGRESS ? `Đang học (${progressPercent}%)` :
                status === LearningStatus.NEED_REVIEW ? "Cần ôn tập lại" : "Chưa học"}
             </span>
@@ -293,34 +321,34 @@ export default function LearningCenter({
         </div>
 
         {/* Primary reading resource doc */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-4.5 shadow-sm space-y-4">
-          <div className="flex items-center gap-1 text-emerald-800 font-extrabold text-xs border-b pb-2">
+        <div className="pixel-surface space-y-4 p-4">
+          <div className="flex items-center gap-1 text-[var(--app-color-brand-primary)] font-extrabold text-xs border-b pb-2">
             <FileText size={14} />
             <span>TÀI LIỆU CHÍNH QUY (VĂN BẢN)</span>
           </div>
 
-          <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[11px] leading-relaxed text-slate-600 font-medium">
-            <p className="font-extrabold text-emerald-950 uppercase tracking-wider mb-0.5">Mục tiêu học tập:</p>
+          <div className="p-3 bg-slate-50 border border-[var(--app-color-divider)] rounded-xl text-body-s leading-relaxed text-[var(--app-color-text-secondary)] font-medium">
+            <p className="font-extrabold text-[var(--app-color-brand-primary-dark)] uppercase tracking-wider mb-0.5">Mục tiêu học tập:</p>
             <p className="italic font-bold">"{detailTopic.objective}"</p>
           </div>
 
           {detailSummary && (
-            <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-[11px] leading-relaxed text-amber-950 font-medium">
-              <p className="font-extrabold uppercase tracking-wider mb-1">Tóm tắt nhanh từ Hoctap AI</p>
+            <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-body-s leading-relaxed text-amber-950 font-medium">
+              <p className="font-extrabold uppercase tracking-wider mb-1">Tóm tắt nội dung</p>
               <p className="whitespace-pre-line">{detailSummary}</p>
             </div>
           )}
 
-          <div className="prose prose-sm max-w-none text-xs leading-relaxed text-slate-700 whitespace-pre-line space-y-3" id="document-content-text">
+          <div className="prose prose-sm max-w-none text-xs leading-relaxed text-[var(--app-color-text-secondary)] whitespace-pre-line space-y-3" id="document-content-text">
             {detailTopic.content}
           </div>
 
           {detailSections.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-500">Mục nội dung từ tài liệu</h4>
+              <h4 className="text-caption font-extrabold uppercase tracking-wider text-[var(--app-color-text-muted)]">Mục nội dung từ tài liệu</h4>
               {detailSections.map((section, index) => (
-                <div key={section.id || index} className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-700">
-                  <p className="font-black text-slate-800">{section.title || `Mục ${index + 1}`}</p>
+                <div key={section.id || index} className="p-3 rounded-xl bg-slate-50 border border-[var(--app-color-divider)] text-body-s text-[var(--app-color-text-secondary)]">
+                  <p className="font-extrabold text-[var(--app-color-text-primary)]">{section.title || `Mục ${index + 1}`}</p>
                   {section.content && <p className="mt-1 whitespace-pre-line leading-relaxed">{section.content}</p>}
                 </div>
               ))}
@@ -328,7 +356,7 @@ export default function LearningCenter({
           )}
 
           {detailTopic.pdfUrl && (
-            <div className="mt-4 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50">
+            <div className="mt-4 rounded-2xl overflow-hidden border border-[var(--app-color-border)] bg-slate-50">
               <iframe
                 title={detailTopic.title}
                 src={detailTopic.pdfUrl}
@@ -340,12 +368,12 @@ export default function LearningCenter({
 
           {/* References Section inside the same card */}
           {detailTopic.references && detailTopic.references.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Tài liệu tham khảo đối chiếu:</h4>
+            <div className="mt-4 pt-4 border-t border-[var(--app-color-divider)]">
+              <h4 className="text-caption font-bold text-[var(--app-color-text-muted)] uppercase tracking-wider mb-1.5">Tài liệu tham khảo đối chiếu:</h4>
               <ul className="space-y-1">
                 {detailTopic.references.map((ref, idx) => (
-                  <li key={idx} className="text-[10px] text-slate-500 flex items-start gap-1.5">
-                    <ExternalLink size={10} className="text-slate-400 mt-0.5 shrink-0" />
+                  <li key={idx} className="text-caption text-[var(--app-color-text-muted)] flex items-start gap-1.5">
+                    <ExternalLink size={10} className="text-[var(--app-color-text-muted)] mt-0.5 shrink-0" />
                     <span>{ref}</span>
                   </li>
                 ))}
@@ -355,9 +383,9 @@ export default function LearningCenter({
         </div>
 
         {detailHasQuiz && (
-          <div className="bg-white border border-slate-100 rounded-2xl p-4.5 shadow-sm space-y-3" id="material-quiz-panel">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-1 text-emerald-800 font-extrabold text-xs">
+          <div className="pixel-surface space-y-3 p-4" id="material-quiz-panel">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--app-color-divider)] pb-2">
+              <div className="flex items-center gap-1 text-[var(--app-color-brand-primary)] font-extrabold text-xs">
                 <Award size={14} />
                 <span>Câu hỏi ôn tập theo tài liệu</span>
               </div>
@@ -365,20 +393,20 @@ export default function LearningCenter({
                 type="button"
                 onClick={startMaterialQuiz}
                 disabled={quizLoading}
-                className="py-2 px-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold text-[10px] rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                className="min-h-11 py-2 px-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold text-caption rounded-xl transition flex items-center gap-1.5 cursor-pointer"
               >
                 <PlayCircle size={13} />
-                <span>{quizLoading ? "Đang tải..." : quizQuestions.length ? "Tải lại" : "Bắt đầu ôn tập"}</span>
+                <span>{quizLoading ? "Đang chuẩn bị câu hỏi..." : quizQuestions.length ? "Làm lại bài ôn tập" : "Bắt đầu ôn tập"}</span>
               </button>
             </div>
 
-            {quizError && <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900 font-bold">{quizError}</div>}
+            {quizError && <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-body-s text-amber-900 font-bold">{quizError}</div>}
 
             {quizQuestions.length > 0 && (
               <div className="space-y-3">
                 {quizQuestions.map((question, index) => (
-                  <div key={question.id} className="p-3 rounded-2xl border border-slate-100 bg-slate-50 space-y-2 text-xs">
-                    <p className="font-black text-slate-800">Câu {index + 1}. {question.question}</p>
+                  <div key={question.id} className="p-3 rounded-2xl border border-[var(--app-color-divider)] bg-slate-50 space-y-2 text-xs">
+                    <p className="font-extrabold text-[var(--app-color-text-primary)]">Câu {index + 1}. {question.question}</p>
                     <div className="space-y-1.5">
                       {question.options.map(option => {
                         const selected = quizAnswers[question.id] === option;
@@ -390,7 +418,7 @@ export default function LearningCenter({
                             className={`flex items-start gap-2 rounded-xl border p-2.5 cursor-pointer ${
                               correctAfterSubmit ? "bg-green-50 border-green-300 text-green-900" :
                               wrongAfterSubmit ? "bg-red-50 border-red-200 text-red-900" :
-                              selected ? "bg-blue-50 border-blue-300 text-blue-950" : "bg-white border-slate-200 text-slate-700"
+                              selected ? "bg-blue-50 border-blue-300 text-blue-950" : "bg-white border-[var(--app-color-border)] text-[var(--app-color-text-secondary)]"
                             }`}
                           >
                             <input
@@ -407,7 +435,7 @@ export default function LearningCenter({
                       })}
                     </div>
                     {quizSubmitted && (
-                      <div className="text-[11px] text-slate-600">
+                      <div className="text-body-s text-[var(--app-color-text-secondary)]">
                         <p className="font-bold">Đáp án đúng: {question.answer}</p>
                         {question.explanation && <p className="mt-1">Giải thích: {question.explanation}</p>}
                       </div>
@@ -419,15 +447,15 @@ export default function LearningCenter({
                   <button
                     type="button"
                     onClick={submitMaterialQuiz}
-                    className="w-full py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs rounded-xl"
+                    className="w-full py-3 bg-[var(--app-color-brand-primary)] hover:bg-[var(--app-color-brand-primary-dark)] text-white font-extrabold text-xs rounded-xl"
                   >
                     Nộp bài ôn tập
                   </button>
                 ) : (
                   <div className="bg-green-50 border border-green-200 rounded-2xl p-3 text-center text-green-900 text-xs font-bold">
-                    Kết quả: {quizScore}/10. Dữ liệu xem lại đã được lưu cục bộ cho tài liệu này.
-                    <button type="button" onClick={() => onNavigate("ranking", lastLearningReview)} className="mt-2 w-full py-2 bg-white border border-green-200 rounded-xl text-green-900 font-black">
-                      Xem lại & Giải thích
+                    Kết quả: {quizScore}/10. Nội dung xem lại đã được lưu trên thiết bị này.
+                    <button type="button" onClick={() => onNavigate("ranking", lastLearningReview)} className="mt-2 w-full py-2 bg-white border border-green-200 rounded-xl text-green-900 font-extrabold">
+                      Xem lại và giải thích
                     </button>
                   </div>
                 )}
@@ -437,25 +465,25 @@ export default function LearningCenter({
         )}
 
         {/* Bottom Interactive Learning Panel */}
-        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-slate-50 rounded-2xl p-5 border border-[var(--app-color-divider)] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-bold text-slate-500 uppercase">Cập nhật tiến độ của đồng chí</p>
-            <p className="text-xs text-slate-500">Sau khi đã nghiên cứu kỹ tài liệu bài đọc, hãy đánh dấu hoàn thành hoặc thi thử sức.</p>
+            <p className="text-xs font-bold text-[var(--app-color-text-muted)] uppercase">Cập nhật tiến độ của đồng chí</p>
+            <p className="text-xs text-[var(--app-color-text-muted)]">Sau khi đã nghiên cứu kỹ tài liệu bài đọc, hãy đánh dấu hoàn thành hoặc thi thử sức.</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => onNavigate("aitutor", detailTopic)}
-              className="py-2 px-4 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 flex items-center gap-1.5 cursor-pointer"
+              className="min-h-11 py-2 px-4 bg-white hover:bg-slate-100 text-[var(--app-color-text-secondary)] font-bold text-xs rounded-xl transition border border-[var(--app-color-border)] flex items-center gap-1.5 cursor-pointer"
             >
-              <MessageSquare size={14} className="text-emerald-700" />
-              <span>Hỏi Trợ lý AI về bài này</span>
+              <MessageSquare size={14} className="text-[var(--app-color-brand-primary)]" />
+              <span>Trao đổi với AI Chính trị viên</span>
             </button>
 
             {detailHasQuiz && (
               <button
                 onClick={startMaterialQuiz}
-                className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                className="min-h-11 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Award size={14} />
                 <span>Làm bài ôn tập tài liệu</span>
@@ -465,7 +493,7 @@ export default function LearningCenter({
             {status !== LearningStatus.COMPLETED && (
               <button
                 onClick={() => handleCompleteTopic(detailTopic)}
-                className="py-2 px-4 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer"
+                className="min-h-11 py-2 px-4 bg-[var(--app-color-brand-primary)] hover:bg-[var(--app-color-brand-primary-dark)] text-white font-bold text-xs rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer"
               >
                 <CheckCircle size={14} />
                 <span>Đánh dấu hoàn thành bài</span>
@@ -476,14 +504,14 @@ export default function LearningCenter({
 
         {/* MD3-style Quiz Requirement Warning Overlay Modal */}
         {showQuizWarning && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" id="quiz-requirement-modal">
-            <div className="bg-white rounded-[28px] p-6 max-w-xs w-full shadow-2xl border border-slate-100 space-y-4 text-center">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm motion-dialog-backdrop flex items-center justify-center p-4 z-50 motion-fade-in" id="quiz-requirement-modal">
+            <div className="app-overlay w-full max-w-xs space-y-4 p-6 text-center">
               <div className="mx-auto w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center">
-                <Award size={24} className="animate-bounce" />
+                <Award size={24} className="motion-status-change" />
               </div>
               <div className="space-y-1">
-                <h3 className="font-black text-slate-800 text-xs uppercase">Yêu cầu trắc nghiệm</h3>
-                <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
+                <h3 className="font-extrabold text-[var(--app-color-text-primary)] text-xs uppercase">Yêu cầu trắc nghiệm</h3>
+                <p className="text-caption text-[var(--app-color-text-muted)] leading-relaxed font-semibold">
                   Đồng chí chưa hoàn tất hoặc chưa đạt yêu cầu của bài trắc nghiệm tự luyện Chuyên đề này. Vui lòng đạt điểm tối thiểu <strong className="text-amber-600">6/10</strong> để đủ điều kiện hoàn thành bài học.
                 </p>
               </div>
@@ -493,14 +521,14 @@ export default function LearningCenter({
                     setShowQuizWarning(false);
                     void startMaterialQuiz();
                   }}
-                  className="w-full py-3 bg-emerald-800 text-white font-extrabold text-[10px] uppercase rounded-xl transition cursor-pointer hover:bg-emerald-950 active:scale-95 min-h-[44px]"
+                  className="w-full py-3 bg-[var(--app-color-brand-primary)] text-white font-extrabold text-caption uppercase rounded-xl transition cursor-pointer hover:bg-[var(--app-color-brand-primary-dark)] active:scale-95 min-h-[44px]"
                 >
                   Làm bài ôn tập ngay
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowQuizWarning(false)}
-                  className="w-full py-2.5 bg-slate-100 text-slate-600 font-bold text-[10px] uppercase rounded-xl transition cursor-pointer hover:bg-slate-200 min-h-[38px]"
+                  className="w-full py-2.5 bg-slate-100 text-[var(--app-color-text-secondary)] font-bold text-caption uppercase rounded-xl transition cursor-pointer hover:bg-slate-200 min-h-11"
                 >
                   Quay lại đọc tiếp
                 </button>
@@ -508,23 +536,27 @@ export default function LearningCenter({
             </div>
           </div>
         )}
-      </div>
+          </AppStack>
+        </AppContainer>
+      </AppPage>
     );
   }
 
   return (
-    <div className="space-y-5" id="learning-center-tab-content">
+    <AppPage variant="plain" id="learning-center-tab-content">
+      <AppContainer bleed>
+        <AppStack gap="xl">
       {learningFallback && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] font-bold text-amber-900">
-          Không tải được dữ liệu học tập trực tuyến, đang hiển thị dữ liệu dự phòng.
+        <div className="bg-amber-50 rounded-2xl p-2.5 text-body-s font-bold text-amber-900">
+          Không thể cập nhật nội dung mới. Đang hiển thị nội dung đã lưu.
         </div>
       )}
 
       {/* Search and Category Filters */}
-      <div className="bg-white border border-slate-100 rounded-[24px] p-4.5 shadow-sm space-y-4">
+      <div className="pixel-surface space-y-3 p-3">
         {/* Search Input */}
         <div className="relative">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--app-color-text-muted)]">
             <Search size={16} />
           </span>
           <input
@@ -532,22 +564,22 @@ export default function LearningCenter({
             placeholder="Tìm kiếm chuyên đề chính trị, pháp luật..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9.5 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition"
+            className="w-full min-h-11 pl-9.5 pr-4 py-2.5 text-xs bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-800 focus:bg-white transition"
           />
         </div>
 
         {/* Category horizontal scroll */}
         <div className="space-y-1.5">
-          <label className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 block">Bộ lọc chuyên đề</label>
+          <label className="text-caption font-extrabold uppercase tracking-widest text-[var(--app-color-text-muted)] block">Bộ lọc chuyên đề</label>
           <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-2 px-2">
             {categoriesList.map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 text-[11px] font-bold rounded-full whitespace-nowrap border shrink-0 transition cursor-pointer min-h-[32px] ${
+                className={`px-3 py-1.5 text-body-s font-bold rounded-full whitespace-nowrap shrink-0 transition cursor-pointer min-h-11 ${
                   selectedCategory === cat
-                    ? "bg-emerald-800 text-white border-emerald-800 shadow-sm"
-                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    ? "bg-[var(--app-color-brand-primary)] text-white"
+                    : "bg-slate-50 text-[var(--app-color-text-secondary)] hover:bg-slate-100"
                 }`}
               >
                 {cat === "All" ? "Tất cả chuyên đề" : cat}
@@ -557,8 +589,8 @@ export default function LearningCenter({
         </div>
 
         {/* Status filters */}
-        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-3 text-[11px]">
-          <span className="text-slate-400 font-bold shrink-0">Trạng thái:</span>
+        <div className="flex items-center gap-1.5 pt-1 text-body-s">
+          <span className="text-[var(--app-color-text-muted)] font-bold shrink-0">Trạng thái:</span>
           <div className="flex gap-1 overflow-x-auto scrollbar-none">
             {[
               { id: "All", name: "Tất cả" },
@@ -570,10 +602,10 @@ export default function LearningCenter({
               <button
                 key={st.id}
                 onClick={() => setSelectedStatus(st.id)}
-                className={`px-3 py-1 rounded-full font-bold transition cursor-pointer shrink-0 min-h-[28px] ${
+                className={`px-3 py-1 rounded-full font-bold transition cursor-pointer shrink-0 min-h-11 ${
                   selectedStatus === st.id
                     ? "bg-slate-800 text-white"
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
+                    : "bg-slate-50 text-[var(--app-color-text-secondary)] hover:bg-slate-100"
                 }`}
               >
                 {st.name}
@@ -584,7 +616,7 @@ export default function LearningCenter({
       </div>
 
       {/* Grid List of Topics - Styled as Duolingo Lesson Paths / Cards */}
-      <div className="space-y-3" id="learning-topics-list-grid">
+      <div className="space-y-2" id="learning-topics-list-grid">
         {filteredTopics.length > 0 ? (
           filteredTopics.map(topic => {
             const prog = getTopicProgress(topic.id);
@@ -592,97 +624,42 @@ export default function LearningCenter({
             const progressPercent = prog ? prog.progressPercent : 0;
             const isBookmarked = bookmarkedIds.includes(topic.id);
 
+            const actionLabel =
+              status === LearningStatus.COMPLETED ? "Xem lại bài học" :
+              status === LearningStatus.IN_PROGRESS ? "Tiếp tục học" :
+              status === LearningStatus.NEED_REVIEW ? "Ôn lại bài" :
+              "Mở bài học";
+
             return (
-              <div
+              <LearningCard
                 key={topic.id}
-                onClick={() => handleStartTopic(topic)}
-                className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-300 hover:shadow-md transition duration-200 group relative cursor-pointer active:scale-98"
-              >
-                {/* Bookmarking trigger */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleBookmark(topic.id);
-                  }}
-                  className="absolute top-4 right-4 text-slate-300 hover:text-amber-500 transition z-10 p-1 rounded-full hover:bg-slate-50"
-                >
-                  <Bookmark size={15} className={isBookmarked ? "fill-amber-400 text-amber-500" : ""} />
-                </button>
-
-                {/* Card Main Info */}
-                <div className="space-y-2 pr-6">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[8px] font-black rounded uppercase tracking-wide">
-                      {topic.category}
-                    </span>
-                    {topic.required && (
-                      <span className="px-1.5 py-0.5 bg-red-50 text-red-700 text-[8px] font-black rounded border border-red-100 uppercase tracking-wide">
-                        Bắt buộc
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="text-xs font-bold text-slate-800 group-hover:text-emerald-800 transition line-clamp-2 leading-snug">
-                    {topic.title}
-                  </h3>
-
-                  <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                    {topic.description}
-                  </p>
-                </div>
-
-                {/* Card Bottom Progress and Action Trigger */}
-                <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between gap-4">
-                  
-                  {/* Visual Progress percentage slider */}
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between text-[9px] font-extrabold text-slate-400">
-                      <span className="flex items-center gap-0.5 uppercase">
-                        <Clock size={10} />
-                        <span>{topic.estimatedMinutes} phút</span>
-                      </span>
-                      <span className={
-                        status === LearningStatus.COMPLETED ? "text-green-700 font-black" :
-                        status === LearningStatus.IN_PROGRESS ? "text-blue-700 font-black" :
-                        status === LearningStatus.NEED_REVIEW ? "text-orange-700 font-black" :
-                        "text-slate-400"
-                      }>
-                        {status === LearningStatus.COMPLETED ? "Hoàn thành" :
-                         status === LearningStatus.IN_PROGRESS ? `${progressPercent}%` :
-                         status === LearningStatus.NEED_REVIEW ? "Cần ôn tập" : "Chưa học"}
-                      </span>
-                    </div>
-
-                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          status === LearningStatus.COMPLETED ? "bg-green-600" :
-                          status === LearningStatus.IN_PROGRESS ? "bg-blue-600" :
-                          status === LearningStatus.NEED_REVIEW ? "bg-orange-600" :
-                          "bg-slate-200"
-                        }`}
-                        style={{ width: `${progressPercent}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  <div className="p-1.5 bg-slate-50 group-hover:bg-emerald-800 rounded-xl text-slate-500 group-hover:text-white transition shadow-sm border border-slate-100">
-                    <ChevronRight size={16} />
-                  </div>
-
-                </div>
-              </div>
+                title={topic.title}
+                description={topic.description}
+                category={topic.category}
+                required={topic.required}
+                estimatedMinutes={topic.estimatedMinutes}
+                progressPercent={progressPercent}
+                hasQuiz={topic.tags?.some(tag => tag.toLocaleLowerCase("vi").includes("câu hỏi"))}
+                pdfAvailable={Boolean(topic.pdfUrl)}
+                actionLabel={actionLabel}
+                onOpen={() => handleStartTopic(topic)}
+                showBookmark
+                bookmarked={isBookmarked}
+                bookmarkAriaLabel={isBookmarked ? `Bỏ lưu ${topic.title}` : `Lưu ${topic.title}`}
+                onToggleBookmark={() => toggleBookmark(topic.id)}
+              />
             );
           })
         ) : (
-          <div className="py-12 text-center text-slate-400 flex flex-col items-center gap-2 bg-white rounded-[24px] border border-dashed border-slate-200" id="learning-empty-state">
-            <BookOpen size={32} className="text-slate-300" />
-            <p className="text-xs font-bold text-slate-700">Không tìm thấy bài học nào</p>
-            <p className="text-[10px] max-w-xs text-slate-400 px-4">Hãy đổi từ khóa hoặc bộ lọc của đồng chí.</p>
+          <div className="app-surface-soft flex flex-col items-center gap-2 py-8 text-center text-[var(--app-color-text-muted)]" id="learning-empty-state">
+            <BookOpen size={32} className="text-[var(--app-color-text-muted)]" />
+            <p className="text-xs font-bold text-[var(--app-color-text-secondary)]">Không tìm thấy bài học nào</p>
+            <p className="text-caption max-w-xs text-[var(--app-color-text-muted)] px-4">Hãy đổi từ khóa hoặc bộ lọc của đồng chí.</p>
           </div>
         )}
       </div>
-    </div>
+        </AppStack>
+      </AppContainer>
+    </AppPage>
   );
 }

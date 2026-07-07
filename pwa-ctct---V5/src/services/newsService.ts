@@ -2,6 +2,7 @@ import { apiClient } from "./apiClient";
 import { News } from "../types";
 import { isLegacyAppsScriptAuthMode } from "./authService";
 import { legacyNews, legacyPolicyDocs } from "../data/cdsLegacyData";
+import { getNewsImageUrl } from "../utils/newsImage";
 
 export type NewsSource =
   | "vnexpress"
@@ -127,7 +128,7 @@ const mapNewsRows = (rows: any[], requestedSource = ""): AppsScriptNews[] =>
         category: categoryForSource(source || requestedSource),
         summary: String(row.summary || row.description || row.moTa || row.content || ""),
         content: String(row.content || row.noiDung || row.summary || row.description || ""),
-        imageUrl: row.imageUrl || row.image || row.thumbnail || row.image_url || undefined,
+        imageUrl: getNewsImageUrl(row) || undefined,
         visibility: "public",
         status: "published",
         authorId: "legacy_apps_script",

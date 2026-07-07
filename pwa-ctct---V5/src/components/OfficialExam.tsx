@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { User, Exam, ExamAttempt, Question, QuestionType } from "../types";
-import { AlertTriangle, ArrowLeft, Award, CheckCircle, ChevronRight, ClipboardList, FileText, Timer } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Award, CheckCircle, ClipboardList, FileText, Timer } from "lucide-react";
 import {
   ExamAnswerPayload,
   ExamWithBank,
@@ -9,6 +9,9 @@ import {
   toUiQuestion
 } from "../services/examService";
 import { reviewService, ReviewPack } from "../services/reviewService";
+import { Alert, Button, EmptyState } from "./ui";
+import { ExamCard } from "./product";
+import { AppContainer, AppPage, AppStack } from "./layout";
 
 interface OfficialExamProps {
   user: User;
@@ -17,6 +20,7 @@ interface OfficialExamProps {
   attempts: ExamAttempt[];
   allQuestions: Question[];
   onSaveExamAttempt: (attempt: ExamAttempt) => void;
+  onSaveReview?: (review: ReviewPack) => void;
   activeExamArg: Exam | null;
   onClearExamArg: () => void;
   onNavigate: (tab: string, arg?: any) => void;
@@ -24,10 +28,11 @@ interface OfficialExamProps {
 
 const targetLabel = (target: string) => {
   const normalized = target.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (["all", "canboqncn", "cbqncn"].includes(normalized)) return "Cán bộ, QNCN";
-  if (["sq", "siquan"].includes(normalized)) return "Sĩ quan";
+  if (["all", "canboqncn", "cbqncn", "canbo"].includes(normalized)) return "CB, QNCN";
+  if (["sq", "siquan"].includes(normalized)) return "SQ";
   if (normalized === "qncn") return "QNCN";
-  return target;
+  if (["dqtv", "danquantuve"].includes(normalized)) return "DQTV";
+  return target.replace(/\s*\(\d+\s*câu\)\s*$/i, "");
 };
 
 export default function OfficialExam({
@@ -36,6 +41,7 @@ export default function OfficialExam({
   exams,
   attempts,
   onSaveExamAttempt,
+  onSaveReview,
   activeExamArg,
   onClearExamArg,
   onNavigate
@@ -68,7 +74,7 @@ export default function OfficialExam({
           id: bank.bankId,
           bankId: bank.bankId,
           title: bank.title,
-          description: bank.mode === "mock" ? "Thi thử từ Apps Script" : "Kiểm tra nhận thức từ Apps Script",
+          description: bank.mode === "mock" ? "Bài thi thử" : "Bài kiểm tra",
           topicIds: [],
           durationMinutes: Math.max(1, Math.ceil(bank.durationSec / 60)),
           questionCount: bank.totalOverride || bank.questionCount,
@@ -206,6 +212,7 @@ export default function OfficialExam({
       }))
     };
     reviewService.saveReviewPack(reviewPack);
+    onSaveReview?.(reviewPack);
     setLastReviewPack(reviewPack);
   };
 
@@ -245,7 +252,7 @@ export default function OfficialExam({
     };
 
     if (selectedExam.bankId.startsWith("fallback_")) {
-      setSubmitError("Đây là dữ liệu dự phòng. Bài kiểm tra chính thức chỉ được ghi nhận khi kết nối được Apps Script.");
+      setSubmitError("Bài kiểm tra hiện chưa thể ghi nhận kết quả. Vui lòng thử lại khi kết nối ổn định.");
       setConfirmSubmitModal(false);
       return;
     }
@@ -258,8 +265,8 @@ export default function OfficialExam({
       const response = await examService.submitExamResult(payload);
       attemptId = response.attemptId || attemptId;
       submittedAt = response.ts || submittedAt;
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Không thể ghi kết quả trực tuyến");
+    } catch {
+      setSubmitError("Không thể ghi nhận kết quả. Vui lòng thử lại.");
       setConfirmSubmitModal(false);
       return;
     } finally {
@@ -291,90 +298,147 @@ export default function OfficialExam({
 
   if (examMode === "runner" && selectedExam) {
     const currentQuestion = examQuestions[currentQIdx];
-    if (!currentQuestion) return <div className="bg-white rounded-2xl p-6 text-center text-xs">Đang tải câu hỏi...</div>;
+    if (!currentQuestion) return <div className="bg-white rounded-2xl p-6 text-center text-xs">Đang chuẩn bị bài kiểm tra...</div>;
     return (
-      <div className="space-y-4" id="exam-fullscreen-runner">
-        {fallback && <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] font-bold text-amber-900">Không tải được dữ liệu kiểm tra trực tuyến, đang hiển thị dữ liệu dự phòng.</div>}
-        {submitError && <div className="bg-red-50 border border-red-200 rounded-2xl p-3 text-[11px] font-bold text-red-900">Chưa nộp được bài: {submitError}. Bài làm vẫn đang được giữ trên màn hình để thử lại.</div>}
-        <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-          <div className="min-w-0"><span className="inline-flex px-2 py-0.5 bg-red-50 text-red-700 text-[8px] font-black rounded uppercase">{selectedExam.bankMode === "mock" ? "Thi thử" : "Kiểm tra nhận thức"}</span><h3 className="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5">{selectedExam.title}</h3></div>
-          <div className="flex items-center gap-1 bg-red-700 text-white px-3 py-1.5 rounded-xl font-mono font-black text-xs shrink-0"><Timer size={13} />{formatTime(timeLeft)}</div>
+      <AppPage variant="plain" id="exam-fullscreen-runner">
+        <AppContainer bleed>
+          <AppStack gap="md">
+        {fallback && <Alert variant="warning" description="Không thể cập nhật nội dung mới. Đang hiển thị nội dung đã lưu." />}
+        {submitError && <Alert variant="danger" title="Chưa nộp được bài" description={`${submitError}. Bài làm vẫn đang được giữ trên màn hình để thử lại.`} />}
+        <div className="pixel-surface-flat flex min-h-11 items-center justify-between p-3">
+          <div className="min-w-0"><span className="inline-flex px-2 py-0.5 bg-red-50 text-red-700 text-caption font-extrabold rounded uppercase">{selectedExam.bankMode === "mock" ? "Thi thử" : "Kiểm tra"}</span><h3 className="text-xs font-bold text-[var(--app-color-text-primary)] line-clamp-1 mt-0.5">{selectedExam.title}</h3></div>
+          <div className="flex items-center gap-1 bg-red-700 text-white px-3 py-1.5 rounded-xl font-mono font-extrabold text-xs shrink-0"><Timer size={13} />{formatTime(timeLeft)}</div>
         </div>
-        <div className="flex items-center justify-between text-[9px] text-slate-400 font-extrabold px-1"><span>Đã trả lời {Object.keys(runnerAnswers).length}/{examQuestions.length}</span><span>TIẾN ĐỘ {Math.round(((currentQIdx + 1) / examQuestions.length) * 100)}%</span></div>
-        <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm space-y-4">
-          <div><span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[8px] font-black rounded uppercase">Câu {currentQIdx + 1} / {examQuestions.length}</span><h4 className="text-sm font-black text-slate-800 leading-snug mt-2">{currentQuestion.questionText}</h4></div>
-          <div className="space-y-2.5">
+        <div className="flex items-center justify-between text-caption text-[var(--app-color-text-muted)] font-extrabold px-1"><span>Đã trả lời {Object.keys(runnerAnswers).length}/{examQuestions.length}</span><span>TIẾN ĐỘ {Math.round(((currentQIdx + 1) / examQuestions.length) * 100)}%</span></div>
+        <div className="pixel-surface space-y-3 p-3">
+          <div><span className="inline-block px-1.5 py-0.5 bg-slate-100 text-[var(--app-color-text-secondary)] text-caption font-extrabold rounded uppercase">Câu {currentQIdx + 1} / {examQuestions.length}</span><h4 className="text-sm font-extrabold text-[var(--app-color-text-primary)] leading-snug mt-2">{currentQuestion.questionText}</h4></div>
+          <div className="space-y-2">
             {currentQuestion.options.map((option, index) => {
               const selected = runnerAnswers[currentQuestion.id]?.includes(index) || false;
-              return <button key={index} onClick={() => handleOptionSelect(currentQuestion.id, index, currentQuestion.type)} className={`w-full p-4 rounded-2xl text-left text-xs transition border min-h-[52px] ${selected ? "bg-red-50 border-red-500 text-red-950 font-bold" : "bg-slate-50 border-slate-200 text-slate-700"}`}><span className={`inline-flex w-5 h-5 mr-3 rounded-full items-center justify-center text-[10px] font-black ${selected ? "bg-red-700 text-white" : "bg-white border text-slate-400"}`}>{String.fromCharCode(65 + index)}</span>{option}</button>;
+              return <button key={index} onClick={() => handleOptionSelect(currentQuestion.id, index, currentQuestion.type)} className={`w-full p-3 rounded-2xl text-left text-xs transition min-h-[48px] ${selected ? "bg-red-50 text-red-950 font-bold ring-1 ring-red-400" : "bg-slate-50 text-[var(--app-color-text-secondary)]"}`}><span className={`inline-flex w-5 h-5 mr-2.5 rounded-full items-center justify-center text-caption font-extrabold ${selected ? "bg-red-700 text-white" : "bg-white text-[var(--app-color-text-muted)]"}`}>{String.fromCharCode(65 + index)}</span>{option}</button>;
             })}
           </div>
-          <div className="pt-3 border-t border-slate-50 flex justify-between gap-3">
+          <div className="pt-1 flex justify-between gap-2.5">
             <button onClick={() => setCurrentQIdx(previous => Math.max(0, previous - 1))} disabled={currentQIdx === 0} className="px-4 py-3 bg-slate-100 disabled:opacity-40 text-xs font-bold rounded-xl">Câu trước</button>
-            {currentQIdx < examQuestions.length - 1 ? <button onClick={() => setCurrentQIdx(previous => previous + 1)} className="px-4 py-3 bg-red-800 text-white text-xs font-bold rounded-xl">Câu tiếp theo</button> : <button onClick={() => setConfirmSubmitModal(true)} className="px-5 py-3 bg-red-700 text-white font-black text-xs rounded-xl">Nộp bài</button>}
+            {currentQIdx < examQuestions.length - 1 ? <button onClick={() => setCurrentQIdx(previous => previous + 1)} className="px-4 py-3 bg-red-800 text-white text-xs font-bold rounded-xl">Câu tiếp theo</button> : <button onClick={() => setConfirmSubmitModal(true)} className="px-5 py-3 bg-red-700 text-white font-extrabold text-xs rounded-xl">Nộp bài</button>}
           </div>
         </div>
-        <div className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm"><div className="grid grid-cols-5 gap-1.5">{examQuestions.map((question, index) => <button key={question.id} onClick={() => setCurrentQIdx(index)} className={`h-9 text-xs font-black rounded-xl border ${currentQIdx === index ? "bg-red-700 border-red-700 text-white" : runnerAnswers[question.id]?.length ? "bg-green-50 border-green-200 text-green-800" : "bg-slate-50 border-slate-100 text-slate-400"}`}>{index + 1}</button>)}</div></div>
-        {confirmSubmitModal && <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-[28px] max-w-sm w-full p-5 space-y-4 text-center"><AlertTriangle size={32} className="text-red-600 mx-auto" /><h4 className="text-sm font-black">Xác nhận nộp bài?</h4><p className="text-xs text-slate-500">Đã trả lời {Object.keys(runnerAnswers).length}/{examQuestions.length} câu.</p><div className="flex gap-2"><button disabled={submitting} onClick={() => setConfirmSubmitModal(false)} className="flex-1 py-3 bg-slate-100 disabled:opacity-50 rounded-xl text-xs font-bold">Rà soát lại</button><button disabled={submitting} onClick={() => void handleSubmitExam(true)} className="flex-1 py-3 bg-red-700 disabled:opacity-50 text-white rounded-xl text-xs font-black">{submitting ? "Đang nộp..." : "Nộp bài ngay"}</button></div></div></div>}
-      </div>
+        <div className="pixel-surface p-3"><div className="grid grid-cols-5 gap-1.5">{examQuestions.map((question, index) => <button key={question.id} onClick={() => setCurrentQIdx(index)} className={`h-11 text-xs font-extrabold rounded-xl ${currentQIdx === index ? "bg-red-700 text-white" : runnerAnswers[question.id]?.length ? "bg-green-50 text-green-800" : "bg-slate-50 text-[var(--app-color-text-muted)]"}`}>{index + 1}</button>)}</div></div>
+        {confirmSubmitModal && <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"><div className="app-overlay max-w-sm w-full p-5 space-y-4 text-center"><AlertTriangle size={32} className="text-red-600 mx-auto" /><h4 className="text-sm font-extrabold">Xác nhận nộp bài?</h4><p className="text-xs text-[var(--app-color-text-muted)]">Đã trả lời {Object.keys(runnerAnswers).length}/{examQuestions.length} câu.</p><div className="flex gap-2"><button disabled={submitting} onClick={() => setConfirmSubmitModal(false)} className="flex-1 py-3 bg-slate-100 disabled:opacity-50 rounded-xl text-xs font-bold">Rà soát lại</button><button disabled={submitting} onClick={() => void handleSubmitExam(true)} className="flex-1 py-3 bg-red-700 disabled:opacity-50 text-white rounded-xl text-xs font-extrabold">{submitting ? "Đang nộp..." : "Nộp bài ngay"}</button></div></div></div>}
+          </AppStack>
+        </AppContainer>
+      </AppPage>
     );
   }
 
   if (examMode === "result" && selectedExam) {
     const attempt = getUserAttempt(selectedExam.bankId);
     return (
-      <div className="space-y-4" id="exam-result-box">
-        <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex justify-between"><button onClick={handleBackToList} className="flex items-center gap-1 text-xs font-black text-red-800"><ArrowLeft size={16} />DANH SÁCH THI</button><span className="text-[10px] text-slate-400 font-extrabold">KẾT QUẢ</span></div>
-        {submitError && <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] text-amber-900">Kết quả đã được giữ cục bộ để xem lại nhưng chưa ghi được lên Apps Script: {submitError}</div>}
-        <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm text-center space-y-5">
+      <AppPage variant="plain" id="exam-result-box">
+        <AppContainer bleed>
+          <AppStack gap="md">
+        <div className="bg-white rounded-2xl p-3 flex justify-between"><button onClick={handleBackToList} className="flex items-center gap-1 text-xs font-extrabold text-red-800"><ArrowLeft size={16} />DANH SÁCH THI</button><span className="text-caption text-[var(--app-color-text-muted)] font-extrabold">KẾT QUẢ</span></div>
+        {submitError && <Alert variant="warning" description={`Kết quả được giữ trên thiết bị để xem lại nhưng chưa được ghi nhận: ${submitError}`} />}
+        <div className="pixel-surface space-y-3 p-3 text-center">
           <Award size={42} className={attempt?.passed ? "text-green-600 mx-auto" : "text-red-600 mx-auto"} />
-          <div><h2 className="text-base font-black">Kết quả {selectedExam.bankMode === "mock" ? "Thi thử" : "Kiểm tra nhận thức"}</h2><p className="text-[10px] text-slate-500 mt-1">{selectedExam.title}</p></div>
-          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-left text-[10px] text-slate-600 space-y-1">
-            <p><span className="font-black">Mã lượt làm:</span> {attempt?.id || "—"}</p>
-            <p><span className="font-black">Thời điểm nộp:</span> {attempt?.submittedAt ? new Date(attempt.submittedAt).toLocaleString("vi-VN") : "—"}</p>
+          <div><h2 className="text-base font-extrabold">Kết quả {selectedExam.bankMode === "mock" ? "Thi thử" : "Kiểm tra"}</h2><p className="text-caption text-[var(--app-color-text-muted)] mt-1">{selectedExam.title}</p></div>
+          <div className="p-2.5 rounded-2xl bg-slate-50 text-left text-caption text-[var(--app-color-text-secondary)] space-y-1">
+            <p><span className="font-extrabold">Mã lượt làm:</span> {attempt?.id || "—"}</p>
+            <p><span className="font-extrabold">Thời điểm nộp:</span> {attempt?.submittedAt ? new Date(attempt.submittedAt).toLocaleString("vi-VN") : "—"}</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl"><div><p className="text-[9px] uppercase text-slate-400">Kết luận</p><p className={attempt?.passed ? "font-black text-green-700" : "font-black text-red-700"}>{attempt?.passed ? "ĐẠT" : "CHƯA ĐẠT"}</p></div><div><p className="text-[9px] uppercase text-slate-400">Điểm</p><p className="font-black">{attempt?.score ?? 0}/10</p></div></div>
+          <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl"><div><p className="text-caption uppercase text-[var(--app-color-text-muted)]">Kết luận</p><p className={attempt?.passed ? "font-extrabold text-green-700" : "font-extrabold text-red-700"}>{attempt?.passed ? "ĐẠT" : "CHƯA ĐẠT"}</p></div><div><p className="text-caption uppercase text-[var(--app-color-text-muted)]">Điểm</p><p className="font-extrabold">{attempt?.score ?? 0}/10</p></div></div>
           <div className="text-left space-y-2">
             {examQuestions.map((question, index) => {
               const chosen = attempt?.answers[question.id]?.[0] ?? -1;
               const correct = question.correctAnswers[0] ?? -1;
               const ok = chosen === correct;
-              return <div key={question.id} className="p-3 bg-slate-50 border rounded-2xl text-[11px] space-y-1"><p className="font-bold">Câu {index + 1}: {question.questionText}</p><p className={ok ? "text-green-700" : "text-red-700"}>{ok ? <CheckCircle size={12} className="inline mr-1" /> : <AlertTriangle size={12} className="inline mr-1" />}Đã chọn: {chosen >= 0 ? question.options[chosen] : "Bỏ trống"}</p><p className="text-slate-600">Đáp án đúng: {question.options[correct] || "—"}</p><p className="text-slate-500">Chủ đề: {question.tags?.[0] || "—"}</p></div>;
+              return <div key={question.id} className="p-3 bg-slate-50 border rounded-2xl text-body-s space-y-1"><p className="font-bold">Câu {index + 1}: {question.questionText}</p><p className={ok ? "text-green-700" : "text-red-700"}>{ok ? <CheckCircle size={12} className="inline mr-1" /> : <AlertTriangle size={12} className="inline mr-1" />}Đã chọn: {chosen >= 0 ? question.options[chosen] : "Bỏ trống"}</p><p className="text-[var(--app-color-text-secondary)]">Đáp án đúng: {question.options[correct] || "—"}</p><p className="text-[var(--app-color-text-muted)]">Chủ đề: {question.tags?.[0] || "—"}</p></div>;
             })}
           </div>
           <div className="grid grid-cols-1 gap-2">
-            <button onClick={() => onNavigate("ranking", lastReviewPack)} className="w-full py-3 bg-red-700 text-white font-bold text-xs rounded-xl">Xem lại & Giải thích</button>
+            <button onClick={() => onNavigate("ranking", lastReviewPack)} className="w-full py-3 bg-red-700 text-white font-bold text-xs rounded-xl">Xem lại và giải thích</button>
             <button onClick={handleBackToList} className="w-full py-3 bg-slate-800 text-white font-bold text-xs rounded-xl">Trở lại danh sách</button>
           </div>
         </div>
-      </div>
+          </AppStack>
+        </AppContainer>
+      </AppPage>
     );
   }
 
   const grouped = [
     { mode: "mock", title: "Thi thử" },
-    { mode: "exam", title: "Kiểm tra chính thức / Kiểm tra nhận thức" }
+    { mode: "exam", title: "Kiểm tra" }
   ];
   return (
-    <div className="space-y-5" id="official-exam-tab-content">
-      <div className="bg-gradient-to-br from-red-800 via-rose-900 to-rose-950 p-5 rounded-[24px] text-white shadow-md flex items-center gap-3.5"><ClipboardList size={42} /><div><h2 className="text-base font-black">Thi thử và Kiểm tra nhận thức</h2><p className="text-[10px] text-red-100 mt-1">Ngân hàng đề trực tuyến từ hệ thống CDS.</p></div></div>
-      {fallback && <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] font-bold text-amber-900">Không tải được dữ liệu kiểm tra trực tuyến, đang hiển thị dữ liệu dự phòng.</div>}
-      {mockApiUnavailable && <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[11px] font-bold text-amber-900">Không tải được dữ liệu Thi thử từ Apps Script.</div>}
+    <AppPage variant="plain" id="official-exam-tab-content">
+      <AppContainer bleed>
+        <AppStack gap="xl">
+      <div className="flex items-center gap-3 rounded-[var(--app-radius-card)] bg-gradient-to-br from-red-800 via-rose-900 to-rose-950 p-3 text-white"><ClipboardList size={34} /><div><h2 className="text-base font-extrabold">Thi thử và Kiểm tra</h2><p className="text-caption text-red-100 mt-0.5">Chọn nội dung phù hợp để bắt đầu làm bài.</p></div></div>
+      {fallback && <Alert variant="warning" description="Không thể cập nhật nội dung mới. Đang hiển thị nội dung đã lưu." />}
+      {mockApiUnavailable && <Alert variant="warning" description="Hiện chưa thể tải nội dung Thi thử. Vui lòng thử lại." />}
       {grouped.map(group => {
         const groupExams = availableExams.filter(exam => exam.bankMode === group.mode);
-        return <section key={group.mode} className="space-y-3"><h3 className="text-[11px] font-black uppercase text-slate-600">{group.title}</h3>{groupExams.length ? groupExams.map(exam => {
-          const attempt = getUserAttempt(exam.bankId);
-          const open = exam.bankStatus === "open";
-          const examKey = `${exam.apiSource}:${exam.bankId}`;
-          const target = selectedTargets[examKey] || selectedTargets[exam.bankId] || exam.targets?.[0]?.key || "";
-          return <article key={examKey} className="bg-white border border-slate-100 rounded-[24px] p-4 shadow-sm space-y-3">
-            <div className="flex justify-between gap-2"><span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${open ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-100 text-slate-500"}`}>{exam.statusLabel || (open ? "Đang mở" : "Chưa mở")}</span><span className="text-[9px] text-slate-400 font-bold">{Math.ceil(exam.durationSec / 60)} phút · {exam.questionCount} câu</span></div>
-            <div><h4 className="text-xs font-black text-slate-800">{exam.title}</h4><p className="text-[10px] text-slate-500 mt-1">{exam.startAtLocal || new Date(exam.startDate).toLocaleString("vi-VN")} — {exam.endAtLocal || new Date(exam.endDate).toLocaleString("vi-VN")}</p></div>
-            {exam.targets?.length > 0 && <label className="block text-[10px] font-bold text-slate-600">Đối tượng<select value={target} onChange={event => setSelectedTargets(previous => ({ ...previous, [examKey]: event.target.value }))} className="mt-1 w-full min-h-[40px] border border-slate-200 rounded-xl px-3 bg-white text-xs">{exam.targets.map(item => <option key={item.key} value={item.key}>{targetLabel(item.label || item.key)}{item.questionCount ? ` (${item.questionCount} câu)` : ""}</option>)}</select></label>}
-            <div className="pt-2 border-t flex justify-end">{attempt ? <button onClick={event => { event.stopPropagation(); setSelectedExam(exam); setActiveAttempt(attempt); setExamMode("result"); }} className="py-2 px-3 bg-slate-100 text-xs font-bold rounded-xl">Xem kết quả</button> : open ? <button disabled={startingExamKey === examKey} onClick={event => { event.stopPropagation(); void handleStartExam(exam); }} className="py-2.5 px-4 bg-red-700 disabled:opacity-50 text-white font-black text-[10px] uppercase rounded-xl flex items-center gap-1">{startingExamKey === examKey ? "Đang tải..." : group.mode === "mock" ? "Bắt đầu thi thử" : "Bắt đầu kiểm tra"}<ChevronRight size={12} /></button> : <span className="text-[10px] text-slate-400 font-bold">Chỉ có thể bắt đầu khi kỳ thi đang mở</span>}</div>
-          </article>;
-        }) : <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-5 text-center text-xs text-slate-500"><FileText size={24} className="mx-auto mb-2 text-slate-300" />{group.mode === "mock" ? "Chưa có ngân hàng thi thử. Cần cấu hình một dòng Banks có mode=mock trên Apps Script." : "Chưa có ngân hàng đề trong nhóm này."}</div>}</section>;
+        return (
+          <section key={group.mode} className="space-y-3">
+            <h3 className="text-body-s font-extrabold uppercase text-[var(--app-color-text-secondary)]">{group.title}</h3>
+            {groupExams.length ? groupExams.map(exam => {
+              const attempt = getUserAttempt(exam.bankId);
+              const open = exam.bankStatus === "open";
+              const examKey = `${exam.apiSource}:${exam.bankId}`;
+              const target = selectedTargets[examKey] || selectedTargets[exam.bankId] || exam.targets?.[0]?.key || "";
+              return (
+                <ExamCard
+                  key={examKey}
+                  title={exam.title}
+                  description={exam.description}
+                  mode={group.mode === "mock" ? "mock" : "exam"}
+                  status={open ? "active" : "unavailable"}
+                  statusLabel={open ? "Đang diễn ra" : exam.bankStatus === "scheduled" ? "Sắp diễn ra" : "Đã kết thúc"}
+                  durationMinutes={Math.ceil(exam.durationSec / 60)}
+                  questionCount={exam.questionCount}
+                  timeWindowLabel={`${exam.startAtLocal || new Date(exam.startDate).toLocaleString("vi-VN")} — ${exam.endAtLocal || new Date(exam.endDate).toLocaleString("vi-VN")}`}
+                  selectedTarget={target}
+                  targetOptions={exam.targets?.map(item => ({
+                    value: item.key,
+                    label: targetLabel(item.label || item.key)
+                  })) || []}
+                  onTargetChange={value => setSelectedTargets(previous => ({ ...previous, [examKey]: value }))}
+                  loading={startingExamKey === examKey}
+                  resultSummary={attempt ? (
+                    <Button
+                      type="button"
+                      onClick={event => {
+                        event.stopPropagation();
+                        setSelectedExam(exam);
+                        setActiveAttempt(attempt);
+                        setExamMode("result");
+                      }}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      Xem kết quả
+                    </Button>
+                  ) : undefined}
+                  onStart={event => {
+                    event.stopPropagation();
+                    void handleStartExam(exam);
+                  }}
+                />
+              );
+            }) : (
+              <EmptyState
+                variant={group.mode === "mock" ? "exam" : "default"}
+                icon={<FileText size={24} />}
+                title={group.mode === "mock" ? "Hiện chưa có kỳ thi thử" : "Hiện chưa có kỳ kiểm tra"}
+                description={group.mode === "mock" ? "Nội dung Thi thử sẽ hiển thị khi được ban hành." : "Nội dung Kiểm tra sẽ hiển thị khi được ban hành."}
+              />
+            )}
+          </section>
+        );
       })}
-    </div>
+        </AppStack>
+      </AppContainer>
+    </AppPage>
   );
 }

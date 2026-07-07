@@ -10,6 +10,7 @@ interface PracticeQuizProps {
   activeTopicArg: LearningTopic | null;
   onClearTopicArg: () => void;
   onSaveQuizAttempt: (attempt: QuizAttempt) => void;
+  onSaveReview: (review: ReviewPack) => void;
   onNavigate: (tab: string, arg?: any) => void;
 }
 
@@ -20,6 +21,7 @@ export default function PracticeQuiz({
   activeTopicArg,
   onClearTopicArg,
   onSaveQuizAttempt,
+  onSaveReview,
   onNavigate
 }: PracticeQuizProps) {
   // Config state
@@ -181,6 +183,7 @@ export default function PracticeQuiz({
         })
       };
       reviewService.saveReviewPack(reviewPack);
+      onSaveReview(reviewPack);
       setLastReviewPack(reviewPack);
       onSaveQuizAttempt(finalAttempt);
     }
@@ -204,16 +207,16 @@ export default function PracticeQuiz({
     return (
       <div className="space-y-4" id="quiz-runner-box">
         {/* Top Header Panel */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-[var(--app-color-divider)] rounded-2xl p-4 app-shadow-low flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-ping" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <div className="w-2.5 h-2.5 bg-[var(--app-color-brand-primary)] rounded-full motion-status-change" />
+            <span className="text-caption font-extrabold uppercase tracking-widest text-[var(--app-color-text-muted)]">
               CÂU {currentIdx + 1} / {questions.length}
             </span>
           </div>
           <button
             onClick={handleExitQuiz}
-            className="text-[10px] font-extrabold uppercase text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+            className="text-caption font-extrabold uppercase text-[var(--app-color-text-muted)] hover:text-[var(--app-color-text-secondary)] cursor-pointer p-1"
           >
             Thoát học tập
           </button>
@@ -221,18 +224,18 @@ export default function PracticeQuiz({
 
         {/* Progress Bar indicator */}
         <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-          <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300" style={{ width: `${percentage}%` }}></div>
+          <div className="h-full bg-gradient-to-r from-[var(--app-color-brand-primary)] to-[var(--app-color-brand-gold)] transition-all duration-300" style={{ width: `${percentage}%` }}></div>
         </div>
 
         {/* Primary Question Container Card */}
-        <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm space-y-4">
+        <div className="pixel-surface space-y-4 p-5">
           <div className="space-y-2">
-            <span className="inline-flex px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[8px] font-black rounded uppercase tracking-wide">
+            <span className="inline-flex px-2 py-0.5 bg-[var(--brand-warm)] text-[var(--app-color-brand-primary)] text-caption font-extrabold rounded uppercase tracking-wide">
               {currentQuestion.type === QuestionType.SINGLE ? "Một đáp án đúng" :
                currentQuestion.type === QuestionType.MULTIPLE ? "Nhiều đáp án đúng" :
                currentQuestion.type === QuestionType.TRUE_FALSE ? "Lựa chọn Đúng/Sai" : "Bài tập tình huống"}
             </span>
-            <h3 className="text-sm font-black text-slate-800 leading-snug">
+            <h3 className="text-sm font-extrabold text-[var(--app-color-text-primary)] leading-snug">
               {currentQuestion.questionText}
             </h3>
           </div>
@@ -243,16 +246,16 @@ export default function PracticeQuiz({
               const isSelected = selectedAnswers.includes(idx);
               const isCorrectOpt = currentQuestion.correctAnswers.includes(idx);
 
-              let optionStyle = "bg-slate-50 border-slate-200 text-slate-700 active:scale-98 hover:bg-slate-100/70";
+              let optionStyle = "bg-slate-50 border-[var(--app-color-border)] text-[var(--app-color-text-secondary)] active:scale-98 hover:bg-slate-100/70";
               if (isSelected && !checkedAnswer) {
-                optionStyle = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold shadow-sm";
+                optionStyle = "bg-[var(--brand-warm)] border-[var(--app-color-brand-primary)] text-[var(--app-color-brand-primary-dark)] font-bold app-shadow-low";
               } else if (checkedAnswer) {
                 if (isCorrectOpt) {
-                  optionStyle = "bg-green-100 border-green-500 text-green-950 font-black shadow-sm";
+                  optionStyle = "bg-green-100 border-green-500 text-green-950 font-extrabold app-shadow-low";
                 } else if (isSelected && !isCorrectOpt) {
                   optionStyle = "bg-red-50 border-red-400 text-red-950 font-bold";
                 } else {
-                  optionStyle = "bg-slate-50/50 border-slate-100 text-slate-400 opacity-50";
+                  optionStyle = "bg-slate-50/50 border-[var(--app-color-divider)] text-[var(--app-color-text-muted)] opacity-50";
                 }
               }
 
@@ -263,8 +266,8 @@ export default function PracticeQuiz({
                   disabled={checkedAnswer}
                   className={`w-full p-4 rounded-2xl text-left text-xs border transition flex items-start gap-3 min-h-[52px] cursor-pointer ${optionStyle}`}
                 >
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${
-                    isSelected ? "bg-emerald-800 text-white" : "bg-white border text-slate-500"
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center font-extrabold text-caption shrink-0 ${
+                    isSelected ? "bg-[var(--app-color-brand-primary)] text-white" : "bg-white border text-[var(--app-color-text-muted)]"
                   }`}>
                     {String.fromCharCode(65 + idx)}
                   </span>
@@ -275,7 +278,7 @@ export default function PracticeQuiz({
           </div>
 
           {/* Action check button / next button controls */}
-          <div className="pt-3.5 border-t border-slate-50 flex flex-col gap-3">
+          <div className="pt-3.5 border-t border-[var(--app-color-divider)] flex flex-col gap-3">
             
             {checkedAnswer && (
               <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
@@ -300,7 +303,7 @@ export default function PracticeQuiz({
                 <button
                   onClick={handleCheckAnswer}
                   disabled={selectedAnswers.length === 0}
-                  className="w-full py-3 px-5 bg-emerald-800 hover:bg-emerald-950 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition shadow active:scale-95 cursor-pointer min-h-[44px]"
+                  className="w-full py-3 px-5 bg-[var(--app-color-brand-primary)] hover:bg-[var(--app-color-brand-primary-dark)] disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition shadow active:scale-95 cursor-pointer min-h-[44px]"
                   id="btn-quiz-check"
                 >
                   Kiểm tra đáp án
@@ -321,16 +324,16 @@ export default function PracticeQuiz({
 
           {/* Detailed Solution Explanation Box */}
           {checkedAnswer && (
-            <div className="p-4 bg-amber-50/70 border border-amber-200/50 rounded-2xl space-y-2 animate-fade-in" id="quiz-explanation-box">
-              <p className="text-[10px] font-black uppercase tracking-widest text-amber-900 flex items-center gap-1">
+            <div className="p-4 bg-amber-50/70 border border-amber-200/50 rounded-2xl space-y-2 motion-fade-in" id="quiz-explanation-box">
+              <p className="text-caption font-extrabold uppercase tracking-widest text-amber-900 flex items-center gap-1">
                 <HelpCircle size={13} />
                 <span>Giải thích lý thuyết chính trị viên:</span>
               </p>
-              <p className="text-[11px] text-slate-700 leading-relaxed font-medium">
+              <p className="text-body-s text-[var(--app-color-text-secondary)] leading-relaxed font-medium">
                 {currentQuestion.explanation}
               </p>
               {currentQuestion.reference && (
-                <p className="text-[9px] text-slate-500 font-bold italic border-t border-amber-100 pt-1">
+                <p className="text-caption text-[var(--app-color-text-muted)] font-bold italic border-t border-amber-100 pt-1">
                   Cơ sở pháp lý: {currentQuestion.reference}
                 </p>
               )}
@@ -346,28 +349,28 @@ export default function PracticeQuiz({
     const passed = finalScore >= 6;
 
     return (
-      <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center max-w-lg mx-auto space-y-6" id="quiz-ended-box">
+      <div className="bg-white border border-[var(--app-color-divider)] rounded-2xl p-6 app-shadow-low text-center max-w-lg mx-auto space-y-6" id="quiz-ended-box">
         <div className="flex flex-col items-center gap-2">
           <div className={`p-4 rounded-full ${passed ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"}`}>
             <Award size={48} />
           </div>
-          <h2 className="text-xl font-black text-slate-800">Bài luyện tập hoàn tất!</h2>
-          <p className="text-xs text-slate-500">Hệ thống đã tự động chấm điểm và đánh giá tiến độ của đồng chí.</p>
+          <h2 className="text-xl font-extrabold text-[var(--app-color-text-primary)]">Bài luyện tập hoàn tất!</h2>
+          <p className="text-xs text-[var(--app-color-text-muted)]">Hệ thống đã tự động chấm điểm và đánh giá tiến độ của đồng chí.</p>
         </div>
 
         {/* Scorecard */}
-        <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-[var(--app-color-divider)]">
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Điểm số</p>
-            <p className={`text-2xl font-black ${passed ? "text-green-700" : "text-orange-700"}`}>{finalScore}/10</p>
+            <p className="text-caption text-[var(--app-color-text-muted)] font-bold uppercase tracking-wide">Điểm</p>
+            <p className={`text-2xl font-extrabold ${passed ? "text-green-700" : "text-orange-700"}`}>{finalScore}/10</p>
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Số câu đúng</p>
-            <p className="text-2xl font-black text-slate-800">{correctCount}</p>
+            <p className="text-caption text-[var(--app-color-text-muted)] font-bold uppercase tracking-wide">Số câu đúng</p>
+            <p className="text-2xl font-extrabold text-[var(--app-color-text-primary)]">{correctCount}</p>
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Số câu sai</p>
-            <p className="text-2xl font-black text-slate-800">{wrongCount}</p>
+            <p className="text-caption text-[var(--app-color-text-muted)] font-bold uppercase tracking-wide">Số câu sai</p>
+            <p className="text-2xl font-extrabold text-[var(--app-color-text-primary)]">{wrongCount}</p>
           </div>
         </div>
 
@@ -379,7 +382,7 @@ export default function PracticeQuiz({
                 <CheckCircle size={14} />
                 <span>ĐẠT TIÊU CHUẨN</span>
               </p>
-              <p className="font-medium text-slate-600">Đồng chí đã nắm vững kiến thức lý luận cơ bản của chuyên đề này. Điểm số của đồng chí được cộng vào thành tích thi đua của Đơn vị.</p>
+              <p className="font-medium text-[var(--app-color-text-secondary)]">Đồng chí đã nắm vững kiến thức lý luận cơ bản của chuyên đề này. Kết quả được ghi nhận vào thành tích học tập của đơn vị.</p>
             </div>
           ) : (
             <div className="text-orange-800 bg-orange-50/40 border-orange-200">
@@ -387,7 +390,7 @@ export default function PracticeQuiz({
                 <AlertTriangle size={14} />
                 <span>CẦN ÔN TẬP LẠI (DƯỚI 6.0 ĐIỂM)</span>
               </p>
-              <p className="font-medium text-slate-600">Bài tự luyện chưa đạt yêu cầu tối thiểu. Chuyên đề này đã được đánh dấu trạng thái <strong>Cần ôn tập</strong> để đồng chí dễ dàng tìm đọc lại.</p>
+              <p className="font-medium text-[var(--app-color-text-secondary)]">Bài tự luyện chưa đạt yêu cầu tối thiểu. Chuyên đề này đã được đánh dấu trạng thái <strong>Cần ôn tập</strong> để đồng chí dễ dàng tìm đọc lại.</p>
             </div>
           )}
         </div>
@@ -409,22 +412,22 @@ export default function PracticeQuiz({
 
           <button
             onClick={() => onNavigate("aitutor", quizType === "topic" ? topics.find(t => t.id === selectedTopicId) : null)}
-            className="flex-1 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+            className="flex-1 py-2 bg-white hover:bg-slate-50 text-[var(--app-color-text-secondary)] border border-[var(--app-color-border)] font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
           >
-            <MessageSquare size={14} className="text-emerald-700" />
-            <span>Hỏi Trợ lý AI về các lỗi sai</span>
+            <MessageSquare size={14} className="text-[var(--app-color-brand-primary)]" />
+            <span>Trao đổi với AI Chính trị viên về lỗi sai</span>
           </button>
 
           <button
             onClick={() => onNavigate("ranking", lastReviewPack)}
-            className="flex-1 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs rounded-xl transition cursor-pointer"
+            className="flex-1 py-2 bg-white hover:bg-slate-50 text-[var(--app-color-text-secondary)] border border-[var(--app-color-border)] font-bold text-xs rounded-xl transition cursor-pointer"
           >
-            Xem lại & Giải thích
+            Xem lại và giải thích
           </button>
 
           <button
             onClick={handleExitQuiz}
-            className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+            className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-[var(--app-color-text-secondary)] font-bold text-xs rounded-xl transition cursor-pointer"
           >
             Về trang chủ tự luyện
           </button>
@@ -448,24 +451,24 @@ export default function PracticeQuiz({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Setup Configuration Card */}
-        <div className="md:col-span-2 bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 border-b pb-2">Cấu hình bài tự luyện</h3>
+        <div className="md:col-span-2 bg-white border border-[var(--app-color-divider)] rounded-2xl p-5 app-shadow-low space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--app-color-text-muted)] border-b pb-2">Cấu hình bài tự luyện</h3>
 
           {/* Mode selections */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-600 block">Hình thức tự luyện:</label>
+            <label className="text-xs font-semibold text-[var(--app-color-text-secondary)] block">Hình thức tự luyện:</label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setQuizType("topic")}
                 className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 cursor-pointer ${
                   quizType === "topic"
-                    ? "bg-emerald-50 border-emerald-400 text-emerald-900 font-medium"
-                    : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
+                    ? "bg-[var(--brand-warm)] border-[var(--app-color-brand-gold)] text-[var(--app-color-brand-primary-dark)] font-medium"
+                    : "bg-slate-50 border-[var(--app-color-border)] hover:bg-slate-100 text-[var(--app-color-text-secondary)]"
                 }`}
               >
                 <span className="text-xs font-bold">Luyện theo chuyên đề</span>
-                <span className="text-[10px] text-slate-500">Tập trung một bài học nhất định</span>
+                <span className="text-caption text-[var(--app-color-text-muted)]">Tập trung một bài học nhất định</span>
               </button>
 
               <button
@@ -473,12 +476,12 @@ export default function PracticeQuiz({
                 onClick={() => setQuizType("random")}
                 className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 cursor-pointer ${
                   quizType === "random"
-                    ? "bg-emerald-50 border-emerald-400 text-emerald-900 font-medium"
-                    : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
+                    ? "bg-[var(--brand-warm)] border-[var(--app-color-brand-gold)] text-[var(--app-color-brand-primary-dark)] font-medium"
+                    : "bg-slate-50 border-[var(--app-color-border)] hover:bg-slate-100 text-[var(--app-color-text-secondary)]"
                 }`}
               >
                 <span className="text-xs font-bold">Sát hạch ngẫu nhiên</span>
-                <span className="text-[10px] text-slate-500">Trộn các câu hỏi từ hệ thống</span>
+                <span className="text-caption text-[var(--app-color-text-muted)]">Trộn các câu hỏi từ hệ thống</span>
               </button>
 
               <button
@@ -486,12 +489,12 @@ export default function PracticeQuiz({
                 onClick={() => setQuizType("weak")}
                 className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 cursor-pointer ${
                   quizType === "weak"
-                    ? "bg-emerald-50 border-emerald-400 text-emerald-900 font-medium"
-                    : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700"
+                    ? "bg-[var(--brand-warm)] border-[var(--app-color-brand-gold)] text-[var(--app-color-brand-primary-dark)] font-medium"
+                    : "bg-slate-50 border-[var(--app-color-border)] hover:bg-slate-100 text-[var(--app-color-text-secondary)]"
                 }`}
               >
                 <span className="text-xs font-bold">Khắc phục điểm yếu</span>
-                <span className="text-[10px] text-slate-500">Các chủ đề có kết quả thấp</span>
+                <span className="text-caption text-[var(--app-color-text-muted)]">Các chủ đề có kết quả thấp</span>
               </button>
             </div>
           </div>
@@ -499,11 +502,11 @@ export default function PracticeQuiz({
           {/* Topic Selector */}
           {quizType === "topic" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-600 block">Chọn Chuyên đề Học tập:</label>
+              <label className="text-xs font-semibold text-[var(--app-color-text-secondary)] block">Chọn Chuyên đề Học tập:</label>
               <select
                 value={selectedTopicId}
                 onChange={(e) => setSelectedTopicId(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                className="w-full p-2.5 bg-slate-50 border border-[var(--app-color-border)] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-800 transition"
               >
                 {topics.map(t => (
                   <option key={t.id} value={t.id}>
@@ -516,7 +519,7 @@ export default function PracticeQuiz({
 
           <button
             onClick={() => startQuiz(quizType)}
-            className="w-full py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl transition shadow flex items-center justify-center gap-1 cursor-pointer"
+            className="w-full py-2.5 bg-[var(--app-color-brand-primary)] hover:bg-[var(--app-color-brand-primary-dark)] text-white font-bold text-xs rounded-xl transition shadow flex items-center justify-center gap-1 cursor-pointer"
             id="btn-quiz-start"
           >
             <span>Bắt đầu tự luyện trắc nghiệm</span>
@@ -525,9 +528,9 @@ export default function PracticeQuiz({
         </div>
 
         {/* Review Instructions / History */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 border-b pb-2">Hướng dẫn tự học</h3>
-          <div className="text-xs space-y-3 text-slate-600 leading-relaxed">
+        <div className="bg-white border border-[var(--app-color-divider)] rounded-2xl p-5 app-shadow-low space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--app-color-text-muted)] border-b pb-2">Hướng dẫn tự học</h3>
+          <div className="text-xs space-y-3 text-[var(--app-color-text-secondary)] leading-relaxed">
             <p>
               1. <strong>Tự kiểm tra khách quan:</strong> Kết quả tự luyện giúp chiến sĩ kiểm tra lỗ hổng kiến thức để bổ sung kịp thời.
             </p>
@@ -535,7 +538,7 @@ export default function PracticeQuiz({
               2. <strong>Học từ sai lầm:</strong> Trình kiểm tra sẽ giải thích luật pháp chi tiết và chỉ dẫn văn bản gốc ngay khi chiến sĩ trả lời chưa đúng.
             </p>
             <p>
-              3. <strong>Hỗ trợ của AI:</strong> Đồng chí có thể bấm &apos;Hỏi AI&apos; bất kỳ lúc nào để nhận phân tích chi tiết cho từng trường hợp vi phạm kỷ luật.
+              3. <strong>AI Chính trị viên:</strong> Đồng chí có thể trao đổi bất kỳ lúc nào để nhận phân tích chi tiết cho từng tình huống.
             </p>
           </div>
         </div>

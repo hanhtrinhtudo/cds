@@ -65,23 +65,23 @@ export default function LegalCenter({ user, topics, onNavigate }: LegalCenterPro
     <div className="space-y-4" id="legal-center-tab-content">
       
       {/* Search and Title in cohesive MD3 Hero Card */}
-      <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-950 p-5 rounded-[24px] text-white shadow-md space-y-3.5 relative overflow-hidden">
+      <div className="relative overflow-hidden rounded-[var(--app-radius-sheet)] bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-950 p-5 text-white app-shadow-medium space-y-3">
         <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-3">
           <Scale size={100} />
         </div>
         <div className="space-y-1">
-          <span className="inline-block px-2 py-0.5 bg-yellow-400 text-slate-950 text-[9px] font-black rounded uppercase tracking-wide">
+          <span className="inline-block px-2 py-0.5 bg-yellow-400 text-[var(--app-color-text-primary)] text-caption font-extrabold rounded uppercase tracking-wide">
             Giáo dục pháp luật
           </span>
-          <h2 className="text-base font-black tracking-tight mt-1">Tủ sách Pháp luật Quân sự</h2>
-          <p className="text-[10px] text-blue-100/95 leading-relaxed max-w-xs">
-            Cung cấp các thông tin chuẩn mực, giải nghĩa điều luật bằng trợ lý AI giúp nâng cao ý thức chấp hành pháp luật nhà nước và kỷ luật quân đội.
+          <h2 className="text-base font-extrabold tracking-tight mt-1">Tủ sách Pháp luật Quân sự</h2>
+          <p className="text-caption text-blue-100/95 leading-relaxed max-w-xs">
+            Cung cấp thông tin chính thống, giải nghĩa điều luật cùng AI Chính trị viên, góp phần nâng cao ý thức chấp hành pháp luật nhà nước và kỷ luật quân đội.
           </p>
         </div>
 
         {/* Unified Search Input bar */}
-        <div className="relative text-slate-800 z-10 pt-1">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+        <div className="relative text-[var(--app-color-text-primary)] z-10 pt-1">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--app-color-text-muted)]">
             <Search size={14} />
           </span>
           <input
@@ -89,52 +89,52 @@ export default function LegalCenter({ user, topics, onNavigate }: LegalCenterPro
             placeholder="Tìm kiếm luật nghĩa vụ, dân quân..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-600 shadow-inner"
+            className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-transparent rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-800 shadow-inner"
           />
         </div>
       </div>
 
       {/* Embedded interactive accordion detail */}
       {selectedScenario && (
-        <div className="bg-blue-50/75 border border-blue-100 rounded-[24px] p-4.5 shadow-sm animate-fade-in space-y-3.5" id="scenario-detail-box">
+        <div className="motion-fade-in space-y-3 rounded-[var(--app-radius-card)] border border-blue-100 bg-blue-50/75 p-4 app-shadow-low" id="scenario-detail-box">
           <div className="flex items-start justify-between gap-2 border-b border-blue-100 pb-2">
             <div className="flex items-center gap-2 min-w-0">
               <AlertCircle className="text-blue-700 shrink-0" size={16} />
-              <h4 className="text-xs font-black text-blue-900 line-clamp-1">{selectedScenario.title}</h4>
+              <h4 className="text-xs font-extrabold text-blue-900 line-clamp-1">{selectedScenario.title}</h4>
             </div>
             <button
               onClick={() => setSelectedScenario(null)}
-              className="text-[10px] font-black uppercase text-blue-800 hover:text-blue-950 p-1"
+              className="text-caption font-extrabold uppercase text-blue-800 hover:text-blue-950 p-1"
             >
               Đóng
             </button>
           </div>
 
-          <div className="space-y-3 text-xs text-slate-700">
+          <div className="space-y-3 text-xs text-[var(--app-color-text-secondary)]">
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Tình huống thực tế</p>
-              <p className="mt-1 bg-white p-3 rounded-2xl border border-slate-100 leading-relaxed text-slate-700 font-medium">
+              <p className="text-caption font-extrabold uppercase tracking-wider text-[var(--app-color-text-muted)]">Tình huống thực tế</p>
+              <p className="mt-1 bg-white p-3 rounded-2xl border border-[var(--app-color-divider)] leading-relaxed text-[var(--app-color-text-secondary)] font-medium">
                 {selectedScenario.situation}
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-1.5">
-              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Câu hỏi pháp lý</span>
-              <p className="font-bold text-slate-800 bg-white/60 p-2.5 rounded-xl border border-slate-100">
+              <span className="text-caption font-extrabold uppercase tracking-wider text-[var(--app-color-text-muted)]">Câu hỏi pháp lý</span>
+              <p className="font-bold text-[var(--app-color-text-primary)] bg-white/60 p-2.5 rounded-xl border border-[var(--app-color-divider)]">
                 {selectedScenario.question}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <p className="text-caption font-extrabold uppercase tracking-wider text-[var(--app-color-text-muted)] flex items-center gap-1">
                 <span>Căn cứ áp dụng chính thức</span>
-                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-900 font-black rounded text-[8px]">
+                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-900 font-extrabold rounded text-caption">
                   {selectedScenario.lawCitation}
                 </span>
               </p>
               <div className="bg-white p-3.5 rounded-2xl border border-blue-100/50 leading-relaxed">
-                <p className="font-bold text-emerald-800 text-[11px] mb-1">Cách giải quyết thấu lý đạt tình:</p>
-                <p className="text-slate-600 font-medium text-[11px]">{selectedScenario.correctBehavior}</p>
+                <p className="font-bold text-[var(--app-color-brand-primary)] text-body-s mb-1">Cách giải quyết thấu lý đạt tình:</p>
+                <p className="text-[var(--app-color-text-secondary)] font-medium text-body-s">{selectedScenario.correctBehavior}</p>
               </div>
             </div>
 
@@ -146,15 +146,15 @@ export default function LegalCenter({ user, topics, onNavigate }: LegalCenterPro
                   category: TopicCategory.LEGAL,
                   description: selectedScenario.situation
                 })}
-                className="w-full py-3 px-4 bg-emerald-800 hover:bg-emerald-950 text-white font-extrabold text-xs rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
+                className="w-full py-3 px-4 bg-[var(--app-color-brand-primary)] hover:bg-[var(--app-color-brand-primary-dark)] text-white font-extrabold text-xs rounded-xl transition app-shadow-low flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
               >
                 <MessageSquare size={13} />
-                <span>Nhờ Trợ lý AI giải thích chuyên sâu</span>
+                <span>Trao đổi với AI Chính trị viên</span>
               </button>
               
               <button
                 onClick={() => onNavigate("quiz")}
-                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer min-h-[40px]"
+                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-[var(--app-color-text-secondary)] border border-[var(--app-color-border)] font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer min-h-11"
               >
                 <HelpCircle size={13} />
                 <span>Kiểm tra trắc nghiệm nhanh</span>
@@ -166,13 +166,13 @@ export default function LegalCenter({ user, topics, onNavigate }: LegalCenterPro
 
       {/* Scenario-Based Learning List */}
       <div className="space-y-2">
-        <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-1.5">
+        <h3 className="text-caption font-extrabold uppercase tracking-widest text-[var(--app-color-text-muted)] pl-1 flex items-center gap-1.5">
           <ShieldAlert size={14} className="text-blue-800" />
           <span>Giải quyết tình huống thực tế</span>
         </h3>
 
-        <div className="bg-white border border-slate-100 rounded-[24px] p-4.5 shadow-sm space-y-2.5">
-          <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+        <div className="pixel-surface space-y-2.5 p-4">
+          <p className="text-caption text-[var(--app-color-text-muted)] font-medium leading-relaxed">
             Chọn một vướng mắc pháp luật quân sự dân sự thường gặp ở cơ sở để tra cứu hướng ứng xử chuẩn xác:
           </p>
 
@@ -183,12 +183,12 @@ export default function LegalCenter({ user, topics, onNavigate }: LegalCenterPro
                 onClick={() => setSelectedScenario(sc)}
                 className={`w-full p-3.5 rounded-2xl text-left text-xs transition border cursor-pointer min-h-[50px] flex items-center justify-between gap-2 active:scale-98 ${
                   selectedScenario?.id === sc.id
-                    ? "bg-blue-50 border-blue-300 text-blue-950 font-bold shadow-sm"
-                    : "bg-slate-50 border-slate-100 text-slate-700 hover:bg-slate-100/50"
+                    ? "bg-blue-50 border-blue-300 text-blue-950 font-bold app-shadow-low"
+                    : "bg-slate-50 border-[var(--app-color-divider)] text-[var(--app-color-text-secondary)] hover:bg-slate-100/50"
                 }`}
               >
                 <span className="leading-snug pr-2">{sc.title}</span>
-                <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                <ChevronRight size={14} className="text-[var(--app-color-text-muted)] shrink-0" />
               </button>
             ))}
           </div>
@@ -198,8 +198,8 @@ export default function LegalCenter({ user, topics, onNavigate }: LegalCenterPro
       {/* Mobile-first Stacked List of Legal Topics */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Văn bản Pháp luật trọng tâm</h3>
-          <span className="text-[10px] font-bold text-slate-400 uppercase">{filteredTopics.length} CHUYÊN ĐỀ</span>
+          <h3 className="text-caption font-extrabold uppercase tracking-widest text-[var(--app-color-text-muted)]">Văn bản Pháp luật trọng tâm</h3>
+          <span className="text-caption font-bold text-[var(--app-color-text-muted)] uppercase">{filteredTopics.length} CHUYÊN ĐỀ</span>
         </div>
 
         <div className="space-y-3">
@@ -207,23 +207,23 @@ export default function LegalCenter({ user, topics, onNavigate }: LegalCenterPro
             <div
               key={t.id}
               onClick={() => onNavigate("learning", t)}
-              className="bg-white border border-slate-100 rounded-[24px] p-4.5 shadow-sm hover:border-blue-200 transition duration-150 cursor-pointer flex flex-col justify-between"
+              className="pixel-surface flex cursor-pointer flex-col justify-between p-4 transition hover:border-blue-200"
             >
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
                   <Scale size={12} className="text-blue-600" />
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t.category}</span>
+                  <span className="text-caption font-extrabold text-[var(--app-color-text-muted)] uppercase tracking-wider">{t.category}</span>
                 </div>
-                <h4 className="text-xs font-black text-slate-800 leading-snug">
+                <h4 className="text-xs font-extrabold text-[var(--app-color-text-primary)] leading-snug">
                   {t.title}
                 </h4>
-                <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed font-medium">
+                <p className="text-caption text-[var(--app-color-text-muted)] line-clamp-2 leading-relaxed font-medium">
                   {t.description}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold">
-                <span className="text-slate-400">Mức độ: {t.difficulty}</span>
+              <div className="mt-4 pt-3 border-t border-[var(--app-color-divider)] flex items-center justify-between text-caption font-bold">
+                <span className="text-[var(--app-color-text-muted)]">Mức độ: {t.difficulty}</span>
                 <span className="text-blue-800 font-extrabold flex items-center gap-0.5">
                   <span>Học điều luật</span>
                   <ChevronRight size={12} />
